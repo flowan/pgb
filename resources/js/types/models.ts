@@ -61,3 +61,16 @@ export interface ScheduleException {
     notes: string | null;
     caregiver?: Caregiver;
 }
+
+export interface AvailabilitySlot {
+    id: number;
+    client_id: number;
+    day_of_week: number | null;
+    date: string | null;
+    start_time: string;
+    end_time: string;
+    status: 'open' | 'claimed';
+    claimed_by: number | null;
+    claimed_at: string | null;
+    notes: string | null;
+}

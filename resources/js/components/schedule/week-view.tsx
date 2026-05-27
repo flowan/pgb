@@ -1,6 +1,6 @@
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { Schedule, ScheduleException } from '@/types';
+import type { AvailabilitySlot, Schedule, ScheduleException } from '@/types';
 
 const dayNamesShort = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
 const HOUR_HEIGHT = 60;
@@ -11,9 +11,12 @@ const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR
 interface WeekViewProps {
     schedules: Schedule[];
     exceptions: ScheduleException[];
+    availabilitySlots?: AvailabilitySlot[];
     weekStart: Date;
     onDeleteSchedule?: (id: number) => void;
     onDeleteException?: (id: number) => void;
+    onDeleteAvailability?: (id: number) => void;
+    onClaimAvailability?: (id: number) => void;
 }
 
 function timeToMinutes(time: string): number {
@@ -31,8 +34,10 @@ interface EventBlock {
     sublabel?: string;
     startTime: string;
     endTime: string;
-    variant: 'regular' | 'added' | 'modified' | 'cancelled';
+    variant: 'regular' | 'added' | 'modified' | 'cancelled' | 'available';
     onDelete?: () => void;
+    onAction?: () => void;
+    actionLabel?: string;
 }
 
 function EventCard({ event }: { event: EventBlock }) {
@@ -46,6 +51,7 @@ function EventCard({ event }: { event: EventBlock }) {
         added: 'bg-green-50 border-green-300 text-green-900 dark:bg-green-950/40 dark:border-green-800 dark:text-green-200',
         modified: 'bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-200',
         cancelled: 'bg-red-50 border-red-200 text-red-400 line-through dark:bg-red-950/30 dark:border-red-800 dark:text-red-400',
+        available: 'bg-purple-50 border-purple-300 border-dashed text-purple-900 dark:bg-purple-950/40 dark:border-purple-700 dark:text-purple-200',
     };
 
     const timeStyles = {
@@ -53,6 +59,7 @@ function EventCard({ event }: { event: EventBlock }) {
         added: 'text-green-600 dark:text-green-400',
         modified: 'text-amber-600 dark:text-amber-400',
         cancelled: 'text-red-400 dark:text-red-500',
+        available: 'text-purple-600 dark:text-purple-400',
     };
 
     return (
@@ -83,6 +90,19 @@ function EventCard({ event }: { event: EventBlock }) {
                         }}
                     >
                         <Trash2 className="h-3 w-3" />
+                    </Button>
+                )}
+                {event.onAction && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 shrink-0 px-1.5 text-[10px] font-medium text-purple-700 opacity-0 group-hover:opacity-100"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            event.onAction!();
+                        }}
+                    >
+                        {event.actionLabel ?? 'Claimen'}
                     </Button>
                 )}
             </div>
@@ -118,9 +138,12 @@ function NowIndicator() {
 export function WeekView({
     schedules,
     exceptions,
+    availabilitySlots = [],
     weekStart,
     onDeleteSchedule,
     onDeleteException,
+    onDeleteAvailability,
+    onClaimAvailability,
 }: WeekViewProps) {
     const days = Array.from({ length: 7 }, (_, i) => {
         const date = new Date(weekStart);
@@ -187,6 +210,26 @@ export function WeekView({
                 });
             }
         });
+
+        availabilitySlots
+            .filter((slot) => {
+                if (slot.status !== 'open') return false;
+                if (slot.day_of_week !== null) return slot.day_of_week === dayIndex;
+                return slot.date === dateStr;
+            })
+            .forEach((slot) => {
+                events.push({
+                    id: `av-${slot.id}`,
+                    label: 'Beschikbaar',
+                    sublabel: slot.notes ?? undefined,
+                    startTime: slot.start_time,
+                    endTime: slot.end_time,
+                    variant: 'available',
+                    onDelete: onDeleteAvailability ? () => onDeleteAvailability(slot.id) : undefined,
+                    onAction: onClaimAvailability ? () => onClaimAvailability(slot.id) : undefined,
+                    actionLabel: 'Claimen',
+                });
+            });
 
         return events;
     }
@@ -287,6 +330,10 @@ export function WeekView({
                 <div className="flex items-center gap-1.5">
                     <span className="h-3 w-3 rounded border border-red-200 bg-red-50" />
                     Geannuleerd
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <span className="h-3 w-3 rounded border border-dashed border-purple-300 bg-purple-50" />
+                    Beschikbaar
                 </div>
             </div>
         </div>
