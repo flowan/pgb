@@ -54,25 +54,34 @@ export default function CaregiverScheduleIndex({
                 <h1 className="text-2xl font-semibold">Mijn rooster</h1>
 
                 {/* Week navigation */}
-                <div className="flex items-center justify-center gap-4">
-                    <Button variant="outline" size="sm" onClick={prevWeek}>
-                        <ChevronLeft />
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setWeekStart(getMonday(new Date()))}
+                    >
+                        Vandaag
                     </Button>
-                    <span className="text-sm font-medium">
+                    <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" onClick={prevWeek}>
+                            <ChevronLeft />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={nextWeek}>
+                            <ChevronRight />
+                        </Button>
+                    </div>
+                    <span className="text-lg font-medium">
                         {weekStart.toLocaleDateString('nl-NL', {
                             day: 'numeric',
                             month: 'long',
                         })}{' '}
-                        -{' '}
+                        –{' '}
                         {weekEnd.toLocaleDateString('nl-NL', {
                             day: 'numeric',
                             month: 'long',
                             year: 'numeric',
                         })}
                     </span>
-                    <Button variant="outline" size="sm" onClick={nextWeek}>
-                        <ChevronRight />
-                    </Button>
                 </div>
 
                 {clients.length === 0 ? (

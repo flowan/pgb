@@ -154,25 +154,36 @@ export default function ScheduleIndex({
                 </div>
 
                 {/* Week navigation */}
-                <div className="flex items-center justify-center gap-4">
-                    <Button variant="outline" size="sm" onClick={prevWeek}>
-                        <ChevronLeft />
-                    </Button>
-                    <span className="text-sm font-medium">
-                        {weekStart.toLocaleDateString('nl-NL', {
-                            day: 'numeric',
-                            month: 'long',
-                        })}{' '}
-                        -{' '}
-                        {weekEnd.toLocaleDateString('nl-NL', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric',
-                        })}
-                    </span>
-                    <Button variant="outline" size="sm" onClick={nextWeek}>
-                        <ChevronRight />
-                    </Button>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setWeekStart(getMonday(new Date()))}
+                        >
+                            Vandaag
+                        </Button>
+                        <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" onClick={prevWeek}>
+                                <ChevronLeft />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={nextWeek}>
+                                <ChevronRight />
+                            </Button>
+                        </div>
+                        <span className="text-lg font-medium">
+                            {weekStart.toLocaleDateString('nl-NL', {
+                                day: 'numeric',
+                                month: 'long',
+                            })}{' '}
+                            –{' '}
+                            {weekEnd.toLocaleDateString('nl-NL', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric',
+                            })}
+                        </span>
+                    </div>
                 </div>
 
                 {showScheduleForm && (

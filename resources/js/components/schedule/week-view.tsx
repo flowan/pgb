@@ -2,7 +2,11 @@ import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Schedule, ScheduleException } from '@/types';
 
-const dayNames = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag', 'Zondag'];
+const dayNamesShort = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
+const HOUR_HEIGHT = 60;
+const START_HOUR = 7;
+const END_HOUR = 20;
+const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
 
 interface WeekViewProps {
     schedules: Schedule[];
@@ -12,8 +16,103 @@ interface WeekViewProps {
     onDeleteException?: (id: number) => void;
 }
 
+function timeToMinutes(time: string): number {
+    const [h, m] = time.substring(0, 5).split(':').map(Number);
+    return h * 60 + m;
+}
+
 function formatTime(time: string): string {
     return time.substring(0, 5);
+}
+
+interface EventBlock {
+    id: string;
+    label: string;
+    sublabel?: string;
+    startTime: string;
+    endTime: string;
+    variant: 'regular' | 'added' | 'modified' | 'cancelled';
+    onDelete?: () => void;
+}
+
+function EventCard({ event }: { event: EventBlock }) {
+    const startMin = timeToMinutes(event.startTime);
+    const endMin = timeToMinutes(event.endTime);
+    const top = (startMin - START_HOUR * 60) * (HOUR_HEIGHT / 60);
+    const height = Math.max((endMin - startMin) * (HOUR_HEIGHT / 60), 24);
+
+    const styles = {
+        regular: 'bg-blue-50 border-blue-200 text-blue-900 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-200',
+        added: 'bg-green-50 border-green-300 text-green-900 dark:bg-green-950/40 dark:border-green-800 dark:text-green-200',
+        modified: 'bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-200',
+        cancelled: 'bg-red-50 border-red-200 text-red-400 line-through dark:bg-red-950/30 dark:border-red-800 dark:text-red-400',
+    };
+
+    const timeStyles = {
+        regular: 'text-blue-600 dark:text-blue-400',
+        added: 'text-green-600 dark:text-green-400',
+        modified: 'text-amber-600 dark:text-amber-400',
+        cancelled: 'text-red-400 dark:text-red-500',
+    };
+
+    return (
+        <div
+            className={`group absolute left-1 right-1 overflow-hidden rounded-md border px-2 py-1 text-xs ${styles[event.variant]}`}
+            style={{ top: `${top}px`, height: `${height}px` }}
+        >
+            <div className="flex items-start justify-between">
+                <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{event.label}</div>
+                    <div className={`text-[11px] ${timeStyles[event.variant]}`}>
+                        {formatTime(event.startTime)} – {formatTime(event.endTime)}
+                    </div>
+                    {event.sublabel && height > 50 && (
+                        <div className="mt-0.5 truncate text-[11px] opacity-70">
+                            {event.sublabel}
+                        </div>
+                    )}
+                </div>
+                {event.onDelete && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 shrink-0 p-0 opacity-0 group-hover:opacity-100"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            event.onDelete!();
+                        }}
+                    >
+                        <Trash2 className="h-3 w-3" />
+                    </Button>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function isToday(date: Date): boolean {
+    const now = new Date();
+    return (
+        date.getFullYear() === now.getFullYear() &&
+        date.getMonth() === now.getMonth() &&
+        date.getDate() === now.getDate()
+    );
+}
+
+function NowIndicator() {
+    const now = new Date();
+    const minutes = now.getHours() * 60 + now.getMinutes();
+    const top = (minutes - START_HOUR * 60) * (HOUR_HEIGHT / 60);
+
+    if (top < 0 || top > hours.length * HOUR_HEIGHT) return null;
+
+    return (
+        <div className="pointer-events-none absolute left-0 right-0 z-10" style={{ top: `${top}px` }}>
+            <div className="relative h-0.5 bg-red-500">
+                <div className="absolute -left-[5px] -top-[4px] h-2.5 w-2.5 rounded-full bg-red-500" />
+            </div>
+        </div>
+    );
 }
 
 export function WeekView({
@@ -29,167 +128,167 @@ export function WeekView({
         return date;
     });
 
+    function getEventsForDay(dayIndex: number, date: Date): EventBlock[] {
+        const dateStr = date.toISOString().split('T')[0];
+        const dayExceptions = exceptions.filter((ex) => ex.date === dateStr);
+
+        const cancelledOrModifiedIds = new Set(
+            dayExceptions
+                .filter((ex) => ex.type === 'cancelled' || ex.type === 'modified')
+                .map((ex) => ex.schedule_id)
+                .filter((id): id is number => id !== null),
+        );
+
+        const events: EventBlock[] = [];
+
+        schedules
+            .filter((s) => s.day_of_week === dayIndex && !cancelledOrModifiedIds.has(s.id))
+            .forEach((s) => {
+                events.push({
+                    id: `s-${s.id}`,
+                    label: s.caregiver?.name ?? 'Onbekend',
+                    startTime: s.start_time,
+                    endTime: s.end_time,
+                    variant: 'regular',
+                    onDelete: onDeleteSchedule ? () => onDeleteSchedule(s.id) : undefined,
+                });
+            });
+
+        dayExceptions.forEach((ex) => {
+            if (ex.type === 'cancelled') {
+                events.push({
+                    id: `c-${ex.id}`,
+                    label: ex.caregiver?.name ?? 'Onbekend',
+                    sublabel: 'Geannuleerd',
+                    startTime: ex.start_time,
+                    endTime: ex.end_time,
+                    variant: 'cancelled',
+                    onDelete: onDeleteException ? () => onDeleteException(ex.id) : undefined,
+                });
+            } else if (ex.type === 'modified') {
+                events.push({
+                    id: `m-${ex.id}`,
+                    label: ex.caregiver?.name ?? 'Onbekend',
+                    sublabel: 'Gewijzigd',
+                    startTime: ex.start_time,
+                    endTime: ex.end_time,
+                    variant: 'modified',
+                    onDelete: onDeleteException ? () => onDeleteException(ex.id) : undefined,
+                });
+            } else if (ex.type === 'added') {
+                events.push({
+                    id: `a-${ex.id}`,
+                    label: ex.caregiver?.name ?? 'Onbekend',
+                    sublabel: 'Extra afspraak',
+                    startTime: ex.start_time,
+                    endTime: ex.end_time,
+                    variant: 'added',
+                    onDelete: onDeleteException ? () => onDeleteException(ex.id) : undefined,
+                });
+            }
+        });
+
+        return events;
+    }
+
     return (
-        <div className="grid grid-cols-7 gap-2">
-            {days.map((date, dayIndex) => {
-                // day_of_week: 0=Monday ... 6=Sunday
-                const dayOfWeek = dayIndex;
-                const dateStr = date.toISOString().split('T')[0];
-
-                // Get exceptions for this day
-                const dayExceptions = exceptions.filter(
-                    (ex) => ex.date === dateStr,
-                );
-
-                // IDs of schedules that are cancelled or modified on this date
-                const cancelledScheduleIds = new Set(
-                    dayExceptions
-                        .filter((ex) => ex.type === 'cancelled' || ex.type === 'modified')
-                        .map((ex) => ex.schedule_id)
-                        .filter((id): id is number => id !== null),
-                );
-
-                // Regular schedules for this day, excluding cancelled/modified ones
-                const activeSchedules = schedules.filter(
-                    (s) => s.day_of_week === dayOfWeek && !cancelledScheduleIds.has(s.id),
-                );
-
-                // Modifications (yellow)
-                const modifications = dayExceptions.filter((ex) => ex.type === 'modified');
-
-                // Additions (green)
-                const additions = dayExceptions.filter((ex) => ex.type === 'added');
-
-                // Cancellations (red)
-                const cancellations = dayExceptions.filter((ex) => ex.type === 'cancelled');
-
-                return (
-                    <div key={dayIndex} className="min-h-[120px] rounded-lg border p-2">
-                        <div className="mb-2 text-center text-xs font-medium">
-                            {dayNames[dayIndex]}
-                            <div className="text-muted-foreground">
-                                {date.toLocaleDateString('nl-NL', {
-                                    day: 'numeric',
-                                    month: 'short',
-                                })}
+        <div className="overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-gray-950">
+            {/* Day headers */}
+            <div className="grid grid-cols-[64px_repeat(7,1fr)] border-b">
+                <div />
+                {days.map((date, i) => {
+                    const today = isToday(date);
+                    return (
+                        <div
+                            key={i}
+                            className={`border-l p-2 text-center ${today ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''}`}
+                        >
+                            <div className={`text-xs uppercase ${today ? 'font-medium text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`}>
+                                {dayNamesShort[i]}
+                            </div>
+                            <div
+                                className={`mx-auto mt-0.5 text-sm font-medium ${
+                                    today
+                                        ? 'flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white'
+                                        : i >= 5
+                                          ? 'text-muted-foreground'
+                                          : ''
+                                }`}
+                            >
+                                {date.getDate()}
                             </div>
                         </div>
+                    );
+                })}
+            </div>
 
-                        <div className="space-y-1">
-                            {/* Regular schedules (blue) */}
-                            {activeSchedules.map((schedule) => (
-                                <div
-                                    key={`s-${schedule.id}`}
-                                    className="flex items-start justify-between rounded bg-blue-100 p-1 text-xs dark:bg-blue-900/30"
-                                >
-                                    <div>
-                                        <div className="font-medium">
-                                            {schedule.caregiver?.name}
-                                        </div>
-                                        <div className="text-muted-foreground">
-                                            {formatTime(schedule.start_time)} -{' '}
-                                            {formatTime(schedule.end_time)}
-                                        </div>
-                                    </div>
-                                    {onDeleteSchedule && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-5 w-5 p-0"
-                                            onClick={() => onDeleteSchedule(schedule.id)}
-                                        >
-                                            <Trash2 className="h-3 w-3" />
-                                        </Button>
-                                    )}
-                                </div>
-                            ))}
-
-                            {/* Modifications (yellow) */}
-                            {modifications.map((ex) => (
-                                <div
-                                    key={`m-${ex.id}`}
-                                    className="flex items-start justify-between rounded bg-yellow-100 p-1 text-xs dark:bg-yellow-900/30"
-                                >
-                                    <div>
-                                        <div className="font-medium">
-                                            {ex.caregiver?.name}{' '}
-                                            <span className="font-normal">(gewijzigd)</span>
-                                        </div>
-                                        <div className="text-muted-foreground">
-                                            {formatTime(ex.start_time)} -{' '}
-                                            {formatTime(ex.end_time)}
-                                        </div>
-                                    </div>
-                                    {onDeleteException && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-5 w-5 p-0"
-                                            onClick={() => onDeleteException(ex.id)}
-                                        >
-                                            <Trash2 className="h-3 w-3" />
-                                        </Button>
-                                    )}
-                                </div>
-                            ))}
-
-                            {/* Additions (green) */}
-                            {additions.map((ex) => (
-                                <div
-                                    key={`a-${ex.id}`}
-                                    className="flex items-start justify-between rounded bg-green-100 p-1 text-xs dark:bg-green-900/30"
-                                >
-                                    <div>
-                                        <div className="font-medium">
-                                            {ex.caregiver?.name}{' '}
-                                            <span className="font-normal">(extra)</span>
-                                        </div>
-                                        <div className="text-muted-foreground">
-                                            {formatTime(ex.start_time)} -{' '}
-                                            {formatTime(ex.end_time)}
-                                        </div>
-                                    </div>
-                                    {onDeleteException && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-5 w-5 p-0"
-                                            onClick={() => onDeleteException(ex.id)}
-                                        >
-                                            <Trash2 className="h-3 w-3" />
-                                        </Button>
-                                    )}
-                                </div>
-                            ))}
-
-                            {/* Cancellations (red, strikethrough) */}
-                            {cancellations.map((ex) => (
-                                <div
-                                    key={`c-${ex.id}`}
-                                    className="flex items-start justify-between rounded bg-red-100 p-1 text-xs line-through dark:bg-red-900/30"
-                                >
-                                    <div>
-                                        <div className="font-medium">
-                                            {ex.caregiver?.name}{' '}
-                                            <span className="font-normal">(geannuleerd)</span>
-                                        </div>
-                                    </div>
-                                    {onDeleteException && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-5 w-5 p-0"
-                                            onClick={() => onDeleteException(ex.id)}
-                                        >
-                                            <Trash2 className="h-3 w-3" />
-                                        </Button>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+            {/* Time grid */}
+            <div className="max-h-[600px] overflow-y-auto">
+                <div className="relative grid grid-cols-[64px_repeat(7,1fr)]">
+                    {/* Time labels */}
+                    <div>
+                        {hours.map((hour) => (
+                            <div
+                                key={hour}
+                                className="flex items-start justify-end border-b pr-2 text-xs text-muted-foreground"
+                                style={{ height: `${HOUR_HEIGHT}px` }}
+                            >
+                                {String(hour).padStart(2, '0')}:00
+                            </div>
+                        ))}
                     </div>
-                );
-            })}
+
+                    {/* Day columns */}
+                    {days.map((date, dayIndex) => {
+                        const today = isToday(date);
+                        const events = getEventsForDay(dayIndex, date);
+
+                        return (
+                            <div
+                                key={dayIndex}
+                                className={`relative border-l ${today ? 'bg-blue-50/30 dark:bg-blue-950/10' : ''}`}
+                            >
+                                {/* Hour grid lines */}
+                                {hours.map((hour) => (
+                                    <div
+                                        key={hour}
+                                        className="border-b"
+                                        style={{ height: `${HOUR_HEIGHT}px` }}
+                                    />
+                                ))}
+
+                                {/* Events */}
+                                {events.map((event) => (
+                                    <EventCard key={event.id} event={event} />
+                                ))}
+
+                                {/* Now indicator */}
+                                {today && <NowIndicator />}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Legend */}
+            <div className="flex gap-4 border-t px-4 py-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                    <span className="h-3 w-3 rounded border border-blue-200 bg-blue-50" />
+                    Vast ingepland
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <span className="h-3 w-3 rounded border border-green-300 bg-green-50" />
+                    Extra afspraak
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <span className="h-3 w-3 rounded border border-amber-300 bg-amber-50" />
+                    Gewijzigd
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <span className="h-3 w-3 rounded border border-red-200 bg-red-50" />
+                    Geannuleerd
+                </div>
+            </div>
         </div>
     );
 }
