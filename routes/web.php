@@ -3,6 +3,7 @@
 use App\Http\Controllers\BudgetCategoryController;
 use App\Http\Controllers\BudgetExpenseController;
 use App\Http\Controllers\CaregiverController;
+use App\Http\Controllers\CaregiverScheduleController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ScheduleController;
@@ -14,6 +15,10 @@ Route::inertia('/', 'welcome')->name('home');
 Route::get('/dashboard', DashboardController::class)
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+
+Route::get('/my-schedule', CaregiverScheduleController::class)
+    ->middleware(['auth', 'verified', 'role:caregiver'])
+    ->name('my-schedule');
 
 Route::middleware(['auth', 'verified', 'role:budget_holder'])->group(function () {
     Route::resource('clients', ClientController::class);
