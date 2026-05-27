@@ -51,4 +51,9 @@ class Client extends Model
     {
         return $this->hasMany(ScheduleException::class);
     }
+
+    public function availabilitySlots(): HasMany
+    {
+        return $this->hasMany(AvailabilitySlot::class);
+    }
 }
