@@ -6,6 +6,7 @@ use App\Http\Controllers\CaregiverController;
 use App\Http\Controllers\CaregiverScheduleController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AvailabilitySlotController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\ScheduleExceptionController;
 use Illuminate\Support\Facades\Route;
@@ -40,6 +41,9 @@ Route::middleware(['auth', 'verified', 'role:budget_holder'])->group(function ()
 
     Route::post('clients/{client}/schedule-exceptions', [ScheduleExceptionController::class, 'store'])->name('clients.schedule-exceptions.store');
     Route::delete('clients/{client}/schedule-exceptions/{scheduleException}', [ScheduleExceptionController::class, 'destroy'])->name('clients.schedule-exceptions.destroy');
+
+    Route::post('clients/{client}/availability-slots', [AvailabilitySlotController::class, 'store'])->name('clients.availability-slots.store');
+    Route::delete('clients/{client}/availability-slots/{availabilitySlot}', [AvailabilitySlotController::class, 'destroy'])->name('clients.availability-slots.destroy');
 });
 
 require __DIR__.'/settings.php';
