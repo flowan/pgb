@@ -6,6 +6,7 @@ use App\Http\Controllers\CaregiverController;
 use App\Http\Controllers\CaregiverScheduleController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AvailabilityClaimController;
 use App\Http\Controllers\AvailabilitySlotController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\ScheduleExceptionController;
@@ -20,6 +21,10 @@ Route::get('/dashboard', DashboardController::class)
 Route::get('/my-schedule', CaregiverScheduleController::class)
     ->middleware(['auth', 'verified', 'role:caregiver'])
     ->name('my-schedule');
+
+Route::post('/availability-slots/{availabilitySlot}/claim', [AvailabilityClaimController::class, 'store'])
+    ->middleware(['auth', 'verified', 'role:caregiver'])
+    ->name('availability-slots.claim');
 
 Route::middleware(['auth', 'verified', 'role:budget_holder'])->group(function () {
     Route::resource('clients', ClientController::class);
