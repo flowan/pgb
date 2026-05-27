@@ -1,14 +1,15 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WeekView } from '@/components/schedule/week-view';
-import type { Client, Schedule, ScheduleException } from '@/types';
+import type { AvailabilitySlot, Client, Schedule, ScheduleException } from '@/types';
 
 interface ClientWithSchedule extends Client {
     schedules: Schedule[];
     schedule_exceptions: ScheduleException[];
+    availability_slots: AvailabilitySlot[];
 }
 
 function getMonday(date: Date): Date {
@@ -26,6 +27,10 @@ export default function CaregiverScheduleIndex({
     clients: ClientWithSchedule[];
 }) {
     const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
+
+    function claimSlot(slotId: number) {
+        router.post(`/availability-slots/${slotId}/claim`);
+    }
 
     function prevWeek() {
         setWeekStart((prev) => {
@@ -98,7 +103,9 @@ export default function CaregiverScheduleIndex({
                                 <WeekView
                                     schedules={client.schedules ?? []}
                                     exceptions={client.schedule_exceptions ?? []}
+                                    availabilitySlots={client.availability_slots ?? []}
                                     weekStart={weekStart}
+                                    onClaimAvailability={claimSlot}
                                 />
                             </CardContent>
                         </Card>

@@ -13,7 +13,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { WeekView } from '@/components/schedule/week-view';
-import type { Caregiver, Client, Schedule, ScheduleException } from '@/types';
+import type { AvailabilitySlot, Caregiver, Client, Schedule, ScheduleException } from '@/types';
 
 const dayOptions = [
     { value: '0', label: 'Maandag' },
@@ -39,15 +39,18 @@ export default function ScheduleIndex({
     exceptions,
     caregivers,
     client,
+    availabilitySlots,
 }: {
     schedules: Schedule[];
     exceptions: ScheduleException[];
     caregivers: Caregiver[];
     client: Client;
+    availabilitySlots: AvailabilitySlot[];
 }) {
     const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
     const [showScheduleForm, setShowScheduleForm] = useState(false);
     const [showExceptionForm, setShowExceptionForm] = useState(false);
+    const [showAvailabilityForm, setShowAvailabilityForm] = useState(false);
 
     const scheduleForm = useForm({
         caregiver_id: '',
@@ -64,6 +67,15 @@ export default function ScheduleIndex({
         start_time: '',
         end_time: '',
         type: '',
+        notes: '',
+    });
+
+    const availabilityForm = useForm({
+        type: 'recurring',
+        day_of_week: '',
+        date: '',
+        start_time: '',
+        end_time: '',
         notes: '',
     });
 
@@ -107,12 +119,26 @@ export default function ScheduleIndex({
         });
     }
 
+    function submitAvailability(e: React.FormEvent) {
+        e.preventDefault();
+        availabilityForm.post(`/clients/${client.id}/availability-slots`, {
+            onSuccess: () => {
+                availabilityForm.reset();
+                setShowAvailabilityForm(false);
+            },
+        });
+    }
+
     function deleteSchedule(id: number) {
         router.delete(`/clients/${client.id}/schedules/${id}`);
     }
 
     function deleteException(id: number) {
         router.delete(`/clients/${client.id}/schedule-exceptions/${id}`);
+    }
+
+    function deleteAvailability(id: number) {
+        router.delete(`/clients/${client.id}/availability-slots/${id}`);
     }
 
     const weekEnd = new Date(weekStart);
@@ -143,6 +169,13 @@ export default function ScheduleIndex({
                         >
                             <Plus />
                             Vast moment toevoegen
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowAvailabilityForm(!showAvailabilityForm)}
+                        >
+                            <Plus />
+                            Beschikbaarheid
                         </Button>
                         <Button
                             onClick={() => setShowExceptionForm(!showExceptionForm)}
@@ -295,6 +328,135 @@ export default function ScheduleIndex({
                                         type="button"
                                         variant="outline"
                                         onClick={() => setShowScheduleForm(false)}
+                                    >
+                                        Annuleren
+                                    </Button>
+                                </div>
+                            </form>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {showAvailabilityForm && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">Beschikbaarheid toevoegen</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={submitAvailability} className="flex flex-col gap-4">
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="av-type">Type</Label>
+                                        <Select
+                                            value={availabilityForm.data.type}
+                                            onValueChange={(val) =>
+                                                availabilityForm.setData('type', val)
+                                            }
+                                        >
+                                            <SelectTrigger id="av-type">
+                                                <SelectValue placeholder="Selecteer type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="recurring">Terugkerend</SelectItem>
+                                                <SelectItem value="one_time">Eenmalig</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    {availabilityForm.data.type === 'recurring' ? (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="av-day">Dag</Label>
+                                            <Select
+                                                value={availabilityForm.data.day_of_week}
+                                                onValueChange={(val) =>
+                                                    availabilityForm.setData('day_of_week', val)
+                                                }
+                                            >
+                                                <SelectTrigger id="av-day">
+                                                    <SelectValue placeholder="Selecteer dag" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {dayOptions.map((opt) => (
+                                                        <SelectItem key={opt.value} value={opt.value}>
+                                                            {opt.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {availabilityForm.errors.day_of_week && (
+                                                <p className="text-sm text-red-500">
+                                                    {availabilityForm.errors.day_of_week}
+                                                </p>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="av-date">Datum</Label>
+                                            <Input
+                                                id="av-date"
+                                                type="date"
+                                                value={availabilityForm.data.date}
+                                                onChange={(e) =>
+                                                    availabilityForm.setData('date', e.target.value)
+                                                }
+                                            />
+                                            {availabilityForm.errors.date && (
+                                                <p className="text-sm text-red-500">
+                                                    {availabilityForm.errors.date}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                    <div className="space-y-2">
+                                        <Label htmlFor="av-start">Starttijd</Label>
+                                        <Input
+                                            id="av-start"
+                                            type="time"
+                                            value={availabilityForm.data.start_time}
+                                            onChange={(e) =>
+                                                availabilityForm.setData('start_time', e.target.value)
+                                            }
+                                        />
+                                        {availabilityForm.errors.start_time && (
+                                            <p className="text-sm text-red-500">
+                                                {availabilityForm.errors.start_time}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="av-end">Eindtijd</Label>
+                                        <Input
+                                            id="av-end"
+                                            type="time"
+                                            value={availabilityForm.data.end_time}
+                                            onChange={(e) =>
+                                                availabilityForm.setData('end_time', e.target.value)
+                                            }
+                                        />
+                                        {availabilityForm.errors.end_time && (
+                                            <p className="text-sm text-red-500">
+                                                {availabilityForm.errors.end_time}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="av-notes">Notities</Label>
+                                    <Input
+                                        id="av-notes"
+                                        value={availabilityForm.data.notes}
+                                        onChange={(e) =>
+                                            availabilityForm.setData('notes', e.target.value)
+                                        }
+                                    />
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button type="submit" disabled={availabilityForm.processing}>
+                                        Opslaan
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setShowAvailabilityForm(false)}
                                     >
                                         Annuleren
                                     </Button>
@@ -462,9 +624,11 @@ export default function ScheduleIndex({
                 <WeekView
                     schedules={schedules}
                     exceptions={exceptions}
+                    availabilitySlots={availabilitySlots}
                     weekStart={weekStart}
                     onDeleteSchedule={deleteSchedule}
                     onDeleteException={deleteException}
+                    onDeleteAvailability={deleteAvailability}
                 />
             </div>
         </>

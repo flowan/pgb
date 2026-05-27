@@ -22,6 +22,7 @@ class ScheduleController extends Controller
             'exceptions' => $client->scheduleExceptions,
             'caregivers' => $client->caregivers,
             'client' => $client,
+            'availabilitySlots' => $client->availabilitySlots()->where('status', 'open')->get(),
         ]);
     }
 

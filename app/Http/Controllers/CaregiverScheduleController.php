@@ -23,6 +23,11 @@ class CaregiverScheduleController extends Controller
                 'scheduleExceptions.caregiver',
             ]);
 
+            $client->setRelation(
+                'availabilitySlots',
+                $client->availabilitySlots()->where('status', 'open')->get()
+            );
+
             return $client;
         })->unique('id')->values();
 
