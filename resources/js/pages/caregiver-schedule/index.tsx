@@ -1,7 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WeekView } from '@/components/schedule/week-view';
@@ -48,9 +47,7 @@ export default function CaregiverScheduleIndex({
     weekEnd.setDate(weekEnd.getDate() + 6);
 
     return (
-        <AppLayout
-            breadcrumbs={[{ title: 'Mijn rooster', href: '/my-schedule' }]}
-        >
+        <>
             <Head title="Mijn rooster" />
 
             <div className="flex flex-col gap-6 p-4">
@@ -99,6 +96,12 @@ export default function CaregiverScheduleIndex({
                     ))
                 )}
             </div>
-        </AppLayout>
+        </>
     );
 }
+
+CaregiverScheduleIndex.layout = {
+    breadcrumbs: [
+        { title: 'Mijn rooster', href: '/my-schedule' },
+    ],
+};

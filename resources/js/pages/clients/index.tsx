@@ -1,12 +1,11 @@
 import { Head, Link } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
-import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import type { Client } from '@/types';
 
 export default function ClientsIndex({ clients }: { clients: Client[] }) {
     return (
-        <AppLayout breadcrumbs={[{ title: 'Cliënten', href: '/clients' }]}>
+        <>
             <Head title="Cliënten" />
 
             <div className="flex flex-col gap-6 p-4">
@@ -71,6 +70,12 @@ export default function ClientsIndex({ clients }: { clients: Client[] }) {
                     </div>
                 )}
             </div>
-        </AppLayout>
+        </>
     );
 }
+
+ClientsIndex.layout = {
+    breadcrumbs: [
+        { title: 'Cliënten', href: '/clients' },
+    ],
+};

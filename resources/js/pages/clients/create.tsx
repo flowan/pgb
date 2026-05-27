@@ -1,7 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import type { FormEvent } from 'react';
-import AppLayout from '@/layouts/app-layout';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,12 +19,7 @@ export default function ClientCreate() {
     }
 
     return (
-        <AppLayout
-            breadcrumbs={[
-                { title: 'Cliënten', href: '/clients' },
-                { title: 'Nieuwe cliënt', href: '/clients/create' },
-            ]}
-        >
+        <>
             <Head title="Nieuwe cliënt" />
 
             <div className="flex flex-col gap-6 p-4">
@@ -87,6 +81,13 @@ export default function ClientCreate() {
                     </div>
                 </form>
             </div>
-        </AppLayout>
+        </>
     );
 }
+
+ClientCreate.layout = {
+    breadcrumbs: [
+        { title: 'Cliënten', href: '/clients' },
+        { title: 'Nieuwe cliënt', href: '/clients/create' },
+    ],
+};

@@ -1,7 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,13 +38,7 @@ export default function CaregiversIndex({
     }
 
     return (
-        <AppLayout
-            breadcrumbs={[
-                { title: 'Cliënten', href: '/clients' },
-                { title: client.name, href: `/clients/${client.id}` },
-                { title: 'Zorgverleners', href: `/clients/${client.id}/caregivers` },
-            ]}
-        >
+        <>
             <Head title={`Zorgverleners - ${client.name}`} />
 
             <div className="flex flex-col gap-6 p-4">
@@ -146,6 +139,14 @@ export default function CaregiversIndex({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </AppLayout>
+        </>
     );
 }
+
+CaregiversIndex.layout = (props: { client: Client }) => ({
+    breadcrumbs: [
+        { title: 'Cliënten', href: '/clients' },
+        { title: props.client.name, href: `/clients/${props.client.id}` },
+        { title: 'Zorgverleners', href: `/clients/${props.client.id}/caregivers` },
+    ],
+});

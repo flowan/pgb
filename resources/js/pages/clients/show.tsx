@@ -1,7 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, Calendar, Pencil, Trash2, Users, Wallet } from 'lucide-react';
 import { useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -24,12 +23,7 @@ export default function ClientShow({ client }: { client: Client }) {
     }
 
     return (
-        <AppLayout
-            breadcrumbs={[
-                { title: 'Cliënten', href: '/clients' },
-                { title: client.name, href: `/clients/${client.id}` },
-            ]}
-        >
+        <>
             <Head title={client.name} />
 
             <div className="flex flex-col gap-6 p-4">
@@ -149,6 +143,13 @@ export default function ClientShow({ client }: { client: Client }) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </AppLayout>
+        </>
     );
 }
+
+ClientShow.layout = (props: { client: Client }) => ({
+    breadcrumbs: [
+        { title: 'Cliënten', href: '/clients' },
+        { title: props.client.name, href: `/clients/${props.client.id}` },
+    ],
+});

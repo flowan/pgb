@@ -1,7 +1,6 @@
 import { Head, useForm, router, Link } from '@inertiajs/react';
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -120,13 +119,7 @@ export default function ScheduleIndex({
     weekEnd.setDate(weekEnd.getDate() + 6);
 
     return (
-        <AppLayout
-            breadcrumbs={[
-                { title: 'Cliënten', href: '/clients' },
-                { title: client.name, href: `/clients/${client.id}` },
-                { title: 'Planning', href: `/clients/${client.id}/schedule` },
-            ]}
-        >
+        <>
             <Head title={`Planning - ${client.name}`} />
 
             <div className="flex flex-col gap-6 p-4">
@@ -463,6 +456,14 @@ export default function ScheduleIndex({
                     onDeleteException={deleteException}
                 />
             </div>
-        </AppLayout>
+        </>
     );
 }
+
+ScheduleIndex.layout = (props: { client: Client }) => ({
+    breadcrumbs: [
+        { title: 'Cliënten', href: '/clients' },
+        { title: props.client.name, href: `/clients/${props.client.id}` },
+        { title: 'Planning', href: `/clients/${props.client.id}/schedule` },
+    ],
+});

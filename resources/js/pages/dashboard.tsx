@@ -1,6 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
-import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProgressBar } from '@/components/budget/progress-bar';
@@ -20,9 +19,7 @@ export default function Dashboard({ clients }: { clients: Client[] }) {
     const todayDow = getTodayDayOfWeek();
 
     return (
-        <AppLayout
-            breadcrumbs={[{ title: 'Dashboard', href: '/dashboard' }]}
-        >
+        <>
             <Head title="Dashboard" />
 
             <div className="flex flex-col gap-6 p-4">
@@ -111,6 +108,12 @@ export default function Dashboard({ clients }: { clients: Client[] }) {
                     </div>
                 )}
             </div>
-        </AppLayout>
+        </>
     );
 }
+
+Dashboard.layout = {
+    breadcrumbs: [
+        { title: 'Dashboard', href: '/dashboard' },
+    ],
+};

@@ -1,7 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import type { FormEvent } from 'react';
-import AppLayout from '@/layouts/app-layout';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,14 +35,7 @@ export default function CaregiverCreate({ client }: { client: Client }) {
     }
 
     return (
-        <AppLayout
-            breadcrumbs={[
-                { title: 'Cliënten', href: '/clients' },
-                { title: client.name, href: `/clients/${client.id}` },
-                { title: 'Zorgverleners', href: `/clients/${client.id}/caregivers` },
-                { title: 'Nieuwe zorgverlener', href: `/clients/${client.id}/caregivers/create` },
-            ]}
-        >
+        <>
             <Head title={`Nieuwe zorgverlener - ${client.name}`} />
 
             <div className="flex flex-col gap-6 p-4">
@@ -115,6 +107,15 @@ export default function CaregiverCreate({ client }: { client: Client }) {
                     </div>
                 </form>
             </div>
-        </AppLayout>
+        </>
     );
 }
+
+CaregiverCreate.layout = (props: { client: Client }) => ({
+    breadcrumbs: [
+        { title: 'Cliënten', href: '/clients' },
+        { title: props.client.name, href: `/clients/${props.client.id}` },
+        { title: 'Zorgverleners', href: `/clients/${props.client.id}/caregivers` },
+        { title: 'Nieuwe zorgverlener', href: `/clients/${props.client.id}/caregivers/create` },
+    ],
+});
