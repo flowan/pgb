@@ -44,7 +44,7 @@ class ShiftSwapRequestController extends Controller
             ]);
         }
 
-        ShiftSwapRequest::create([
+        $swap = ShiftSwapRequest::create([
             'requester_caregiver_id' => $requesterCaregiver->id,
             'requester_schedule_id' => $requesterScheduleId,
             'requester_schedule_exception_id' => $requesterScheduleExceptionId,
@@ -56,7 +56,7 @@ class ShiftSwapRequestController extends Controller
             'status' => ShiftSwapRequestStatus::Pending,
         ]);
 
-        // notify in Task 8
+        \App\Notifications\ShiftSwapRequested::notify($swap);
 
         return back();
     }
@@ -72,8 +72,6 @@ class ShiftSwapRequestController extends Controller
         }
 
         $shiftSwapRequest->update(['status' => ShiftSwapRequestStatus::Cancelled]);
-
-        // notify in Task 8
 
         return back();
     }

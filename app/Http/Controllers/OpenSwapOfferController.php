@@ -39,7 +39,7 @@ class OpenSwapOfferController extends Controller
             abort(403);
         }
 
-        OpenSwapOffer::create([
+        $offer = OpenSwapOffer::create([
             'open_swap_request_id' => $openSwapRequest->id,
             'offered_by_caregiver_id' => $caregiver->id,
             'offered_schedule_id' => $request->validated('offered_schedule_id'),
@@ -48,7 +48,7 @@ class OpenSwapOfferController extends Controller
             'status' => OpenSwapOfferStatus::Pending,
         ]);
 
-        // notify in Task 8
+        \App\Notifications\OpenSwapOfferReceived::notify($offer);
 
         return back();
     }
@@ -64,8 +64,6 @@ class OpenSwapOfferController extends Controller
         }
 
         $offer->update(['status' => OpenSwapOfferStatus::Withdrawn]);
-
-        // notify in Task 8
 
         return back();
     }

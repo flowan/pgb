@@ -58,7 +58,7 @@ class ShiftSwapResponseController extends Controller
             ],
         ]);
 
-        // notify in Task 8
+        \App\Notifications\ShiftSwapResponded::notify($shiftSwapRequest, true);
 
         return back();
     }
@@ -83,7 +83,7 @@ class ShiftSwapResponseController extends Controller
             'decline_reason' => $validated['decline_reason'] ?? null,
         ]);
 
-        // notify in Task 8
+        \App\Notifications\ShiftSwapResponded::notify($shiftSwapRequest, false);
 
         return back();
     }

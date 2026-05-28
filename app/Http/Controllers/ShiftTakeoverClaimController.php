@@ -52,7 +52,7 @@ class ShiftTakeoverClaimController extends Controller
             'resulting_exception_id' => $exception->id,
         ]);
 
-        // notify in Task 8
+        \App\Notifications\ShiftTakenOver::notify($shiftTakeoverOffer);
 
         return back();
     }

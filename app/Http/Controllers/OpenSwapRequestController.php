@@ -39,7 +39,7 @@ class OpenSwapRequestController extends Controller
             abort(403);
         }
 
-        OpenSwapRequest::create([
+        $openSwapRequest = OpenSwapRequest::create([
             'schedule_id' => $scheduleId,
             'schedule_exception_id' => $scheduleExceptionId,
             'date' => $request->validated('date'),
@@ -48,7 +48,7 @@ class OpenSwapRequestController extends Controller
             'notes' => $request->validated('notes'),
         ]);
 
-        // notify in Task 8
+        \App\Notifications\OpenSwapRequested::notifyColleagues($openSwapRequest);
 
         return back();
     }
@@ -64,8 +64,6 @@ class OpenSwapRequestController extends Controller
         }
 
         $openSwapRequest->update(['status' => OpenSwapRequestStatus::Cancelled]);
-
-        // notify in Task 8
 
         return back();
     }
@@ -127,7 +125,16 @@ class OpenSwapRequestController extends Controller
             ->where('status', OpenSwapOfferStatus::Pending)
             ->update(['status' => OpenSwapOfferStatus::Declined]);
 
-        // notify in Task 8
+        \App\Notifications\OpenSwapAccepted::notify($offer);
+
+        $declinedOffers = $openSwapRequest->offers()
+            ->where('id', '!=', $offer->id)
+            ->where('status', OpenSwapOfferStatus::Declined)
+            ->get();
+
+        foreach ($declinedOffers as $declined) {
+            \App\Notifications\OpenSwapDeclined::notify($declined);
+        }
 
         return back();
     }

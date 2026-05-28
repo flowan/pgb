@@ -8,6 +8,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AvailabilityClaimController;
 use App\Http\Controllers\AvailabilitySlotController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OpenSwapOfferController;
 use App\Http\Controllers\OpenSwapRequestController;
 use App\Http\Controllers\ScheduleController;
@@ -31,6 +32,12 @@ Route::get('/my-schedule', CaregiverScheduleController::class)
 Route::post('/availability-slots/{availabilitySlot}/claim', [AvailabilityClaimController::class, 'store'])
     ->middleware(['auth', 'verified', 'role:caregiver'])
     ->name('availability-slots.claim');
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+});
 
 Route::middleware(['auth', 'verified', 'role:caregiver'])->group(function () {
     Route::post('/shift-takeover-offers', [ShiftTakeoverOfferController::class, 'store'])->name('shift-takeover-offers.store');

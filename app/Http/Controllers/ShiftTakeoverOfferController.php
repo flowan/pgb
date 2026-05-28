@@ -52,7 +52,7 @@ class ShiftTakeoverOfferController extends Controller
             ]);
         }
 
-        ShiftTakeoverOffer::create([
+        $offer = ShiftTakeoverOffer::create([
             'schedule_id' => $scheduleId,
             'schedule_exception_id' => $scheduleExceptionId,
             'date' => $date,
@@ -61,7 +61,7 @@ class ShiftTakeoverOfferController extends Controller
             'notes' => $request->validated('notes'),
         ]);
 
-        // notify in Task 8
+        \App\Notifications\ShiftTakeoverOffered::notifyColleagues($offer);
 
         return back();
     }
@@ -77,8 +77,6 @@ class ShiftTakeoverOfferController extends Controller
         }
 
         $shiftTakeoverOffer->update(['status' => ShiftTakeoverOfferStatus::Cancelled]);
-
-        // notify in Task 8
 
         return back();
     }
