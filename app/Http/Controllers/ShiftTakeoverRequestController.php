@@ -43,7 +43,7 @@ class ShiftTakeoverRequestController extends Controller
             ]);
         }
 
-        ShiftTakeoverRequest::create([
+        $takeoverRequest = ShiftTakeoverRequest::create([
             'requester_caregiver_id' => $requester->id,
             'target_caregiver_id' => $target->id,
             'target_schedule_id' => $request->target_schedule_id,
@@ -52,6 +52,8 @@ class ShiftTakeoverRequestController extends Controller
             'message' => $request->message,
             'status' => ShiftTakeoverRequestStatus::Pending,
         ]);
+
+        \App\Notifications\ShiftTakeoverRequested::notify($takeoverRequest);
 
         return back();
     }

@@ -38,6 +38,8 @@ class ShiftTakeoverRequestResponseController extends Controller
             'resulting_exception_id' => $exception->id,
         ]);
 
+        \App\Notifications\ShiftTakeoverRequestResponded::notify($shiftTakeoverRequest, true);
+
         return back();
     }
 
@@ -55,6 +57,8 @@ class ShiftTakeoverRequestResponseController extends Controller
             'responded_at' => now(),
             'decline_reason' => $validated['decline_reason'] ?? null,
         ]);
+
+        \App\Notifications\ShiftTakeoverRequestResponded::notify($shiftTakeoverRequest, false);
 
         return back();
     }

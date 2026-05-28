@@ -75,6 +75,10 @@ function renderText(item: { type: string; data: Record<string, unknown> }): stri
             return 'Iemand wil met jou ruilen';
         case 'App\\Notifications\\ShiftSwapResponded':
             return 'Reactie op jouw ruilverzoek';
+        case 'App\\Notifications\\ShiftTakeoverRequested':
+            return 'Verzoek om je shift over te nemen';
+        case 'App\\Notifications\\ShiftTakeoverRequestResponded':
+            return 'Reactie op je overname-verzoek';
         case 'App\\Notifications\\OpenSwapRequested':
             return 'Open ruilverzoek geplaatst';
         case 'App\\Notifications\\OpenSwapOfferReceived':
