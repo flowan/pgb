@@ -60,6 +60,10 @@ export default function CaregiverScheduleIndex({
 }) {
     const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
     const [view, setView] = useState<'week' | 'month'>('week');
+    const [perspective, setPerspective] = useState<'mine' | 'per-client'>('mine');
+    const [selectedClientId, setSelectedClientId] = useState<number | null>(
+        clients[0]?.id ?? null,
+    );
     const [showAvailability, setShowAvailability] = useState(true);
     const [showColleagues, setShowColleagues] = useState(true);
     const [dialog, setDialog] = useState<DialogState | null>(null);
@@ -101,20 +105,50 @@ export default function CaregiverScheduleIndex({
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
 
-    // Pass the raw data through — we now want to see the real caregiver name
-    // so colleagues' shifts are distinguishable from your own.
-    const allSchedules: Schedule[] = clients
-        .flatMap((c) => c.schedules ?? [])
-        .filter((s) => showColleagues || myCaregiverIds.includes(s.caregiver_id));
-    const allExceptions: ScheduleException[] = clients
-        .flatMap((c) => c.schedule_exceptions ?? [])
-        .filter((ex) => showColleagues || myCaregiverIds.includes(ex.caregiver_id));
-    const allAvailabilitySlots: AvailabilitySlot[] = clients.flatMap((client) =>
-        (client.availability_slots ?? []).map((slot) => ({
-            ...slot,
-            notes: client.name + (slot.notes ? ` — ${slot.notes}` : ''),
-        })),
-    );
+    // Build view data based on perspective
+    let allSchedules: Schedule[];
+    let allExceptions: ScheduleException[];
+    let allAvailabilitySlots: AvailabilitySlot[];
+
+    if (perspective === 'mine') {
+        // Personal agenda: only my own shifts, but with the CLIENT name as label
+        // (so I see WHERE I need to be, not my own name twice)
+        allSchedules = clients.flatMap((client) =>
+            (client.schedules ?? [])
+                .filter((s) => myCaregiverIds.includes(s.caregiver_id))
+                .map((s) => ({
+                    ...s,
+                    caregiver: { ...(s.caregiver as Caregiver), name: client.name },
+                })),
+        );
+        allExceptions = clients.flatMap((client) =>
+            (client.schedule_exceptions ?? [])
+                .filter((ex) => myCaregiverIds.includes(ex.caregiver_id))
+                .map((ex) => ({
+                    ...ex,
+                    caregiver: { ...(ex.caregiver as Caregiver), name: client.name },
+                })),
+        );
+        allAvailabilitySlots = clients.flatMap((client) =>
+            (client.availability_slots ?? []).map((slot) => ({
+                ...slot,
+                notes: client.name + (slot.notes ? ` — ${slot.notes}` : ''),
+            })),
+        );
+    } else {
+        // Per-client: only the selected client, with real caregiver names
+        const client = clients.find((c) => c.id === selectedClientId);
+        const schedules = client?.schedules ?? [];
+        const exceptions = client?.schedule_exceptions ?? [];
+        const slots = client?.availability_slots ?? [];
+        allSchedules = schedules.filter(
+            (s) => showColleagues || myCaregiverIds.includes(s.caregiver_id),
+        );
+        allExceptions = exceptions.filter(
+            (ex) => showColleagues || myCaregiverIds.includes(ex.caregiver_id),
+        );
+        allAvailabilitySlots = slots;
+    }
 
     const colleagues = collectColleagues(clients, myCaregiverIds);
 
@@ -128,7 +162,40 @@ export default function CaregiverScheduleIndex({
             <Head title="Mijn rooster" />
 
             <div className="flex flex-col gap-6 p-4">
-                <h1 className="text-2xl font-semibold">Mijn rooster</h1>
+                <div className="flex items-center justify-between">
+                    <h1 className="text-2xl font-semibold">Mijn rooster</h1>
+                    <div className="flex items-center gap-1 rounded-lg bg-muted p-0.5">
+                        <button
+                            className={`rounded-md px-3 py-1 text-sm ${perspective === 'mine' ? 'bg-white font-medium shadow-sm dark:bg-gray-800' : 'hover:bg-white/50'}`}
+                            onClick={() => setPerspective('mine')}
+                        >
+                            Mijn agenda
+                        </button>
+                        <button
+                            className={`rounded-md px-3 py-1 text-sm ${perspective === 'per-client' ? 'bg-white font-medium shadow-sm dark:bg-gray-800' : 'hover:bg-white/50'}`}
+                            onClick={() => setPerspective('per-client')}
+                        >
+                            Per cliënt
+                        </button>
+                    </div>
+                </div>
+
+                {perspective === 'per-client' && clients.length > 0 && (
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Cliënt:</span>
+                        <div className="flex flex-wrap gap-1">
+                            {clients.map((c) => (
+                                <button
+                                    key={c.id}
+                                    onClick={() => setSelectedClientId(c.id)}
+                                    className={`rounded-md border px-3 py-1 text-sm ${selectedClientId === c.id ? 'border-blue-400 bg-blue-50 text-blue-900' : 'border-gray-200 hover:border-gray-300'}`}
+                                >
+                                    {c.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Navigation + view toggle */}
                 <div className="flex items-center justify-between">
@@ -155,13 +222,15 @@ export default function CaregiverScheduleIndex({
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setShowColleagues((v) => !v)}
-                            className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs ${showColleagues ? 'border-gray-300 bg-gray-50 text-gray-700' : 'border-gray-200 bg-white text-gray-400'}`}
-                        >
-                            <span className={`h-2.5 w-2.5 rounded-full ${showColleagues ? 'bg-gray-400' : 'border border-gray-300'}`} />
-                            Collega's
-                        </button>
+                        {perspective === 'per-client' && (
+                            <button
+                                onClick={() => setShowColleagues((v) => !v)}
+                                className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs ${showColleagues ? 'border-gray-300 bg-gray-50 text-gray-700' : 'border-gray-200 bg-white text-gray-400'}`}
+                            >
+                                <span className={`h-2.5 w-2.5 rounded-full ${showColleagues ? 'bg-gray-400' : 'border border-gray-300'}`} />
+                                Collega's
+                            </button>
+                        )}
                         <button
                             onClick={() => setShowAvailability((v) => !v)}
                             className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs ${showAvailability ? 'border-purple-300 bg-purple-50 text-purple-900' : 'border-gray-200 bg-white text-gray-400'}`}
