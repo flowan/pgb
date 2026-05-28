@@ -254,4 +254,60 @@ class SickReportTest extends TestCase
         $response->assertForbidden();
         $this->assertSame(0, ScheduleException::count());
     }
+
+    public function test_caregiver_can_undo_own_sick_report(): void
+    {
+        Notification::fake();
+        [, $caregiverUser, , , $schedule] = $this->makeWorld();
+        $date = $this->nextMonday(CarbonImmutable::tomorrow())->format('Y-m-d');
+
+        $this->actingAs($caregiverUser)->post(route('sick-reports.store'), [
+            'scope' => 'single',
+            'kind' => 'schedule',
+            'id' => $schedule->id,
+            'date' => $date,
+        ])->assertRedirect();
+
+        $exception = ScheduleException::first();
+        $this->assertNotNull($exception);
+        $this->assertSame(1, ShiftTakeoverOffer::where('status', ShiftTakeoverOfferStatus::Open)->count());
+
+        $response = $this->actingAs($caregiverUser)->delete(
+            route('sick-reports.destroy', $exception)
+        );
+
+        $response->assertRedirect();
+        $this->assertNull(ScheduleException::find($exception->id));
+        $this->assertSame(0, ShiftTakeoverOffer::where('status', ShiftTakeoverOfferStatus::Open)->count());
+    }
+
+    public function test_cannot_undo_other_caregivers_sick_report(): void
+    {
+        Notification::fake();
+        [, $caregiverUser, $client, , $schedule] = $this->makeWorld();
+        $date = $this->nextMonday(CarbonImmutable::tomorrow())->format('Y-m-d');
+
+        $this->actingAs($caregiverUser)->post(route('sick-reports.store'), [
+            'scope' => 'single',
+            'kind' => 'schedule',
+            'id' => $schedule->id,
+            'date' => $date,
+        ])->assertRedirect();
+
+        $exception = ScheduleException::first();
+        $this->assertNotNull($exception);
+
+        $otherUser = User::factory()->create(['role' => UserRole::Caregiver]);
+        Caregiver::factory()->create([
+            'client_id' => $client->id,
+            'user_id' => $otherUser->id,
+        ]);
+
+        $response = $this->actingAs($otherUser)->delete(
+            route('sick-reports.destroy', $exception)
+        );
+
+        $response->assertForbidden();
+        $this->assertNotNull(ScheduleException::find($exception->id));
+    }
 }

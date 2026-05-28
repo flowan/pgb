@@ -8,6 +8,7 @@ interface MonthViewProps {
     monthStart: Date;
     onOpenWeek?: (date: Date) => void;
     onClaimAvailability?: (slot: AvailabilitySlot, date: string) => void;
+    onUnreportSick?: (exceptionId: number) => void;
     myCaregiverIds?: number[];
     onShiftClick?: (kind: 'schedule' | 'exception', id: number, date: string, isMine: boolean) => void;
 }
@@ -95,6 +96,7 @@ export function MonthView({
     monthStart,
     onOpenWeek,
     onClaimAvailability,
+    onUnreportSick,
     myCaregiverIds = [],
     onShiftClick,
 }: MonthViewProps) {
@@ -161,6 +163,13 @@ export function MonthView({
                 ex.type === 'cancelled'
                     ? (ex.due_to_sickness ? 'Ziek gemeld' : 'Geannuleerd')
                     : ex.type === 'modified' ? 'Gewijzigd' : 'Extra';
+            const canUnreportSick = ex.type === 'cancelled' && ex.due_to_sickness && isMine && !!onUnreportSick;
+            const onAction = canUnreportSick
+                ? () => onUnreportSick!(ex.id)
+                : ex.type !== 'cancelled' && onShiftClick
+                    ? () => onShiftClick('exception', ex.id, dateStr, isMine)
+                    : undefined;
+            const actionLabel = canUnreportSick ? 'Beter' : (isMine ? 'Acties' : 'Info');
             events.push({
                 id: `e-${ex.id}`,
                 label: ex.caregiver?.name ?? 'Onbekend',
@@ -168,8 +177,8 @@ export function MonthView({
                 endTime: ex.end_time,
                 variant,
                 sublabel,
-                onAction: ex.type !== 'cancelled' && onShiftClick ? () => onShiftClick('exception', ex.id, dateStr, isMine) : undefined,
-                actionLabel: isMine ? 'Acties' : 'Info',
+                onAction,
+                actionLabel,
             });
         });
 

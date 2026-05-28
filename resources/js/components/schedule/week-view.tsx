@@ -24,6 +24,7 @@ interface WeekViewProps {
     onDeleteException?: (id: number) => void;
     onDeleteAvailability?: (id: number) => void;
     onClaimAvailability?: (slot: AvailabilitySlot, date: string) => void;
+    onUnreportSick?: (exceptionId: number) => void;
     myCaregiverIds?: number[];
     onShiftClick?: (kind: 'schedule' | 'exception', id: number, date: string, isMine: boolean) => void;
 }
@@ -222,6 +223,7 @@ export function WeekView({
     onDeleteException,
     onDeleteAvailability,
     onClaimAvailability,
+    onUnreportSick,
     myCaregiverIds = [],
     onShiftClick,
 }: WeekViewProps) {
@@ -263,6 +265,7 @@ export function WeekView({
         dayExceptions.forEach((ex) => {
             const isMine = myCaregiverIds.includes(ex.caregiver_id);
             if (ex.type === 'cancelled') {
+                const canUnreportSick = isMine && ex.due_to_sickness && !!onUnreportSick;
                 events.push({
                     id: `c-${ex.id}`,
                     label: ex.caregiver?.name ?? 'Onbekend',
@@ -271,6 +274,8 @@ export function WeekView({
                     endTime: ex.end_time,
                     variant: 'cancelled',
                     onDelete: isMine && onDeleteException ? () => onDeleteException(ex.id) : undefined,
+                    onAction: canUnreportSick ? () => onUnreportSick!(ex.id) : undefined,
+                    actionLabel: canUnreportSick ? 'Beter' : undefined,
                 });
             } else if (ex.type === 'modified') {
                 events.push({

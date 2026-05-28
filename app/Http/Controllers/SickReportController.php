@@ -78,6 +78,59 @@ class SickReportController extends Controller
         return back();
     }
 
+    /**
+     * Undo a sickness-cancellation that belongs to the auth caregiver.
+     *
+     * Deletes the cancellation exception (so the original schedule occurrence is visible again)
+     * and removes the auto-created open takeover offer.
+     *
+     * Edge case: when the original sick-report was made on an `added` exception, that exception
+     * was converted in-place to `cancelled` (see createSicknessFromException). Deleting it removes
+     * the original added exception too — the user must recreate the appointment manually. We accept
+     * this as the rare case; the common recurring-schedule flow undoes cleanly.
+     */
+    public function destroy(ScheduleException $scheduleException): RedirectResponse
+    {
+        $user = auth()->user();
+        if ($user->role !== UserRole::Caregiver) {
+            abort(403);
+        }
+
+        if (! $scheduleException->due_to_sickness || $scheduleException->type !== ScheduleExceptionType::Cancelled) {
+            abort(404);
+        }
+
+        $caregiver = Caregiver::where('user_id', $user->id)
+            ->where('id', $scheduleException->caregiver_id)
+            ->first();
+
+        if (! $caregiver) {
+            abort(403);
+        }
+
+        DB::transaction(function () use ($scheduleException, $caregiver) {
+            $dateStr = $scheduleException->date->format('Y-m-d');
+
+            // Remove the linked open takeover offer (either schedule- or exception-based)
+            if ($scheduleException->schedule_id) {
+                ShiftTakeoverOffer::where('schedule_id', $scheduleException->schedule_id)
+                    ->whereDate('date', $dateStr)
+                    ->where('offered_by_caregiver_id', $caregiver->id)
+                    ->where('status', ShiftTakeoverOfferStatus::Open)
+                    ->delete();
+            } else {
+                ShiftTakeoverOffer::where('schedule_exception_id', $scheduleException->id)
+                    ->where('offered_by_caregiver_id', $caregiver->id)
+                    ->where('status', ShiftTakeoverOfferStatus::Open)
+                    ->delete();
+            }
+
+            $scheduleException->delete();
+        });
+
+        return back();
+    }
+
     private function reportSingle(string $kind, int $id, string $date, array $myCaregiverIds): int
     {
         if ($kind === 'schedule') {

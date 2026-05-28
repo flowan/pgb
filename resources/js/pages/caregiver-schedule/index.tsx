@@ -168,6 +168,10 @@ export default function CaregiverScheduleIndex({
         router.post('/sick-reports', { scope: 'single', kind, id, date }, { preserveScroll: true });
     }
 
+    function unreportSick(exceptionId: number) {
+        router.delete(`/sick-reports/${exceptionId}`, { preserveScroll: true });
+    }
+
     function claimSlot(slot: AvailabilitySlot, date: string) {
         setClaimDialog({ slot, date });
     }
@@ -425,6 +429,7 @@ export default function CaregiverScheduleIndex({
                             availabilitySlots={showAvailability ? allAvailabilitySlots : []}
                             weekStart={weekStart}
                             onClaimAvailability={claimSlot}
+                            onUnreportSick={unreportSick}
                             myCaregiverIds={myCaregiverIds}
                             onShiftClick={handleShiftClick}
                         />
@@ -436,6 +441,7 @@ export default function CaregiverScheduleIndex({
                             monthStart={weekStart}
                             onOpenWeek={jumpToWeek}
                             onClaimAvailability={claimSlot}
+                            onUnreportSick={unreportSick}
                             myCaregiverIds={myCaregiverIds}
                             onShiftClick={handleShiftClick}
                         />
