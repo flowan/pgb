@@ -5,9 +5,11 @@ namespace App\Console\Commands;
 use App\Enums\OpenSwapRequestStatus;
 use App\Enums\ShiftSwapRequestStatus;
 use App\Enums\ShiftTakeoverOfferStatus;
+use App\Enums\ShiftTakeoverRequestStatus;
 use App\Models\OpenSwapRequest;
 use App\Models\ShiftSwapRequest;
 use App\Models\ShiftTakeoverOffer;
+use App\Models\ShiftTakeoverRequest;
 use Illuminate\Console\Command;
 
 class ExpireShiftRequests extends Command
@@ -33,7 +35,11 @@ class ExpireShiftRequests extends Command
             ->whereDate('date', '<', $today)
             ->update(['status' => OpenSwapRequestStatus::Expired]);
 
-        $this->info("Expired: $a takeovers, $b swaps, $c open swaps");
+        $d = ShiftTakeoverRequest::where('status', ShiftTakeoverRequestStatus::Pending)
+            ->whereDate('target_date', '<', $today)
+            ->update(['status' => ShiftTakeoverRequestStatus::Expired]);
+
+        $this->info("Expired: $a takeovers, $b swaps, $c open swaps, $d takeover requests");
 
         return self::SUCCESS;
     }
