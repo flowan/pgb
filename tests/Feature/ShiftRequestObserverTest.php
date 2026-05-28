@@ -6,6 +6,7 @@ use App\Enums\OpenSwapOfferStatus;
 use App\Enums\OpenSwapRequestStatus;
 use App\Enums\ShiftSwapRequestStatus;
 use App\Enums\ShiftTakeoverOfferStatus;
+use App\Enums\ShiftTakeoverRequestStatus;
 use App\Models\Caregiver;
 use App\Models\Client;
 use App\Models\OpenSwapOffer;
@@ -14,6 +15,7 @@ use App\Models\Schedule;
 use App\Models\ScheduleException;
 use App\Models\ShiftSwapRequest;
 use App\Models\ShiftTakeoverOffer;
+use App\Models\ShiftTakeoverRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -113,5 +115,27 @@ class ShiftRequestObserverTest extends TestCase
         $exception->delete();
 
         $this->assertSame(ShiftTakeoverOfferStatus::Cancelled, $offer->fresh()->status);
+    }
+
+    public function test_deleting_schedule_cancels_pending_takeover_request(): void
+    {
+        $client = Client::factory()->create();
+        $requester = Caregiver::factory()->create(['client_id' => $client->id]);
+        $target = Caregiver::factory()->create(['client_id' => $client->id]);
+        $targetSchedule = Schedule::factory()->create([
+            'client_id' => $client->id,
+            'caregiver_id' => $target->id,
+        ]);
+
+        $req = ShiftTakeoverRequest::factory()->create([
+            'requester_caregiver_id' => $requester->id,
+            'target_caregiver_id' => $target->id,
+            'target_schedule_id' => $targetSchedule->id,
+            'status' => ShiftTakeoverRequestStatus::Pending,
+        ]);
+
+        $targetSchedule->delete();
+
+        $this->assertSame(ShiftTakeoverRequestStatus::Cancelled, $req->fresh()->status);
     }
 }

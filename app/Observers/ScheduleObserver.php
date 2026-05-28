@@ -7,12 +7,14 @@ use App\Enums\OpenSwapOfferStatus;
 use App\Enums\OpenSwapRequestStatus;
 use App\Enums\ShiftSwapRequestStatus;
 use App\Enums\ShiftTakeoverOfferStatus;
+use App\Enums\ShiftTakeoverRequestStatus;
 use App\Models\AvailabilitySlot;
 use App\Models\OpenSwapOffer;
 use App\Models\OpenSwapRequest;
 use App\Models\Schedule;
 use App\Models\ShiftSwapRequest;
 use App\Models\ShiftTakeoverOffer;
+use App\Models\ShiftTakeoverRequest;
 
 class ScheduleObserver
 {
@@ -43,5 +45,9 @@ class ScheduleObserver
         OpenSwapOffer::where('offered_schedule_id', $schedule->id)
             ->where('status', OpenSwapOfferStatus::Pending)
             ->update(['status' => OpenSwapOfferStatus::Withdrawn]);
+
+        ShiftTakeoverRequest::where('target_schedule_id', $schedule->id)
+            ->where('status', ShiftTakeoverRequestStatus::Pending)
+            ->update(['status' => ShiftTakeoverRequestStatus::Cancelled]);
     }
 }
