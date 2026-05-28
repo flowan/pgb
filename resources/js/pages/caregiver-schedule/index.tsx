@@ -8,6 +8,7 @@ import { ShiftActionMenu } from '@/components/schedule/shift-action-menu';
 import { TakeoverOfferDialog } from '@/components/schedule/takeover-offer-dialog';
 import { DirectSwapDialog } from '@/components/schedule/direct-swap-dialog';
 import { OpenSwapDialog } from '@/components/schedule/open-swap-dialog';
+import { AvailabilityClaimDialog } from '@/components/schedule/availability-claim-dialog';
 import type { AvailabilitySlot, Caregiver, Client, Schedule, ScheduleException } from '@/types';
 
 interface ClientWithSchedule extends Client {
@@ -62,9 +63,10 @@ export default function CaregiverScheduleIndex({
     const [showAvailability, setShowAvailability] = useState(true);
     const [showColleagues, setShowColleagues] = useState(true);
     const [dialog, setDialog] = useState<DialogState | null>(null);
+    const [claimDialog, setClaimDialog] = useState<{ slot: AvailabilitySlot; date: string } | null>(null);
 
-    function claimSlot(slotId: number) {
-        router.post(`/availability-slots/${slotId}/claim`);
+    function claimSlot(slot: AvailabilitySlot, date: string) {
+        setClaimDialog({ slot, date });
     }
 
     function prev() {
@@ -252,6 +254,15 @@ export default function CaregiverScheduleIndex({
                     kind={dialog.kind}
                     id={dialog.id}
                     date={dialog.date}
+                />
+            )}
+
+            {claimDialog && (
+                <AvailabilityClaimDialog
+                    open
+                    onOpenChange={(o) => !o && setClaimDialog(null)}
+                    slot={claimDialog.slot}
+                    date={claimDialog.date}
                 />
             )}
         </>

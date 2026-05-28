@@ -24,6 +24,7 @@ class AvailabilitySlot extends Model
         'claimed_at',
         'schedule_id',
         'schedule_exception_id',
+        'claimed_dates',
         'notes',
     ];
 
@@ -33,6 +34,7 @@ class AvailabilitySlot extends Model
             'date' => 'date',
             'claimed_at' => 'datetime',
             'status' => AvailabilitySlotStatus::class,
+            'claimed_dates' => 'array',
         ];
     }
 

@@ -34,6 +34,10 @@ Route::post('/availability-slots/{availabilitySlot}/claim', [AvailabilityClaimCo
     ->middleware(['auth', 'verified', 'role:caregiver'])
     ->name('availability-slots.claim');
 
+Route::post('/availability-slots/{availabilitySlot}/release', [\App\Http\Controllers\AvailabilityReleaseController::class, 'store'])
+    ->middleware(['auth', 'verified', 'role:caregiver'])
+    ->name('availability-slots.release');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');

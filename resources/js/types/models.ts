@@ -72,6 +72,8 @@ export interface AvailabilitySlot {
     status: 'open' | 'claimed';
     claimed_by: number | null;
     claimed_at: string | null;
+    claimed_dates: string[] | null;
+    schedule_id: number | null;
     notes: string | null;
 }
 

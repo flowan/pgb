@@ -7,7 +7,7 @@ interface MonthViewProps {
     availabilitySlots?: AvailabilitySlot[];
     monthStart: Date;
     onOpenWeek?: (date: Date) => void;
-    onClaimAvailability?: (id: number) => void;
+    onClaimAvailability?: (slot: AvailabilitySlot, date: string) => void;
     myCaregiverIds?: number[];
     onShiftClick?: (kind: 'schedule' | 'exception', id: number, date: string, isMine: boolean) => void;
 }
@@ -167,7 +167,11 @@ export function MonthView({
         availabilitySlots
             .filter((slot) => {
                 if (slot.status !== 'open') return false;
-                if (slot.day_of_week !== null) return slot.day_of_week === dayIndex;
+                if (slot.day_of_week !== null) {
+                    if (slot.day_of_week !== dayIndex) return false;
+                    if ((slot.claimed_dates ?? []).includes(dateStr)) return false;
+                    return true;
+                }
                 return slot.date === dateStr;
             })
             .forEach((slot) => {
@@ -178,7 +182,7 @@ export function MonthView({
                     endTime: slot.end_time,
                     variant: 'available',
                     sublabel: slot.notes ?? undefined,
-                    onClaim: onClaimAvailability ? () => onClaimAvailability(slot.id) : undefined,
+                    onClaim: onClaimAvailability ? () => onClaimAvailability(slot, dateStr) : undefined,
                 });
             });
 

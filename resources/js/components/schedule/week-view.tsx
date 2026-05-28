@@ -16,7 +16,7 @@ interface WeekViewProps {
     onDeleteSchedule?: (id: number) => void;
     onDeleteException?: (id: number) => void;
     onDeleteAvailability?: (id: number) => void;
-    onClaimAvailability?: (id: number) => void;
+    onClaimAvailability?: (slot: AvailabilitySlot, date: string) => void;
     myCaregiverIds?: number[];
     onShiftClick?: (kind: 'schedule' | 'exception', id: number, date: string, isMine: boolean) => void;
 }
@@ -295,7 +295,11 @@ export function WeekView({
         availabilitySlots
             .filter((slot) => {
                 if (slot.status !== 'open') return false;
-                if (slot.day_of_week !== null) return slot.day_of_week === dayIndex;
+                if (slot.day_of_week !== null) {
+                    if (slot.day_of_week !== dayIndex) return false;
+                    if ((slot.claimed_dates ?? []).includes(dateStr)) return false;
+                    return true;
+                }
                 return slot.date === dateStr;
             })
             .forEach((slot) => {
@@ -307,7 +311,7 @@ export function WeekView({
                     endTime: slot.end_time,
                     variant: 'available',
                     onDelete: onDeleteAvailability ? () => onDeleteAvailability(slot.id) : undefined,
-                    onAction: onClaimAvailability ? () => onClaimAvailability(slot.id) : undefined,
+                    onAction: onClaimAvailability ? () => onClaimAvailability(slot, dateStr) : undefined,
                     actionLabel: 'Claimen',
                 });
             });
