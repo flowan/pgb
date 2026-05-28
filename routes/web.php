@@ -17,6 +17,8 @@ use App\Http\Controllers\ScheduleExceptionController;
 use App\Http\Controllers\ShiftSwapRequestController;
 use App\Http\Controllers\ShiftSwapResponseController;
 use App\Http\Controllers\ShiftTakeoverClaimController;
+use App\Http\Controllers\ShiftTakeoverRequestController;
+use App\Http\Controllers\ShiftTakeoverRequestResponseController;
 use App\Http\Controllers\ShiftTakeoverOfferController;
 use Illuminate\Support\Facades\Route;
 
@@ -55,6 +57,11 @@ Route::middleware(['auth', 'verified', 'role:caregiver'])->group(function () {
     Route::delete('/shift-swap-requests/{shiftSwapRequest}', [ShiftSwapRequestController::class, 'destroy'])->name('shift-swap-requests.destroy');
     Route::post('/shift-swap-requests/{shiftSwapRequest}/accept', [ShiftSwapResponseController::class, 'accept'])->name('shift-swap-requests.accept');
     Route::post('/shift-swap-requests/{shiftSwapRequest}/decline', [ShiftSwapResponseController::class, 'decline'])->name('shift-swap-requests.decline');
+
+    Route::post('/shift-takeover-requests', [ShiftTakeoverRequestController::class, 'store'])->name('shift-takeover-requests.store');
+    Route::delete('/shift-takeover-requests/{shiftTakeoverRequest}', [ShiftTakeoverRequestController::class, 'destroy'])->name('shift-takeover-requests.destroy');
+    Route::post('/shift-takeover-requests/{shiftTakeoverRequest}/accept', [ShiftTakeoverRequestResponseController::class, 'accept'])->name('shift-takeover-requests.accept');
+    Route::post('/shift-takeover-requests/{shiftTakeoverRequest}/decline', [ShiftTakeoverRequestResponseController::class, 'decline'])->name('shift-takeover-requests.decline');
 
     Route::post('/open-swap-requests', [OpenSwapRequestController::class, 'store'])->name('open-swap-requests.store');
     Route::delete('/open-swap-requests/{openSwapRequest}', [OpenSwapRequestController::class, 'destroy'])->name('open-swap-requests.destroy');

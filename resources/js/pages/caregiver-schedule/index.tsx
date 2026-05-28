@@ -10,6 +10,8 @@ import { DirectSwapDialog } from '@/components/schedule/direct-swap-dialog';
 import { OpenSwapDialog } from '@/components/schedule/open-swap-dialog';
 import { AvailabilityClaimDialog } from '@/components/schedule/availability-claim-dialog';
 import { RequestSwapDialog } from '@/components/schedule/request-swap-dialog';
+import { RequestTakeoverDialog } from '@/components/schedule/request-takeover-dialog';
+import { ColleagueShiftMenu } from '@/components/schedule/colleague-shift-menu';
 import type { AvailabilitySlot, Caregiver, Client, Schedule, ScheduleException } from '@/types';
 
 interface ClientWithSchedule extends Client {
@@ -69,7 +71,7 @@ export default function CaregiverScheduleIndex({
     const [showColleagues, setShowColleagues] = useState(true);
     const [dialog, setDialog] = useState<DialogState | null>(null);
     const [claimDialog, setClaimDialog] = useState<{ slot: AvailabilitySlot; date: string } | null>(null);
-    const [requestSwap, setRequestSwap] = useState<{
+    type ColleagueShiftRef = {
         kind: 'schedule' | 'exception';
         id: number;
         date: string;
@@ -77,7 +79,10 @@ export default function CaregiverScheduleIndex({
         caregiverName: string;
         startTime: string;
         endTime: string;
-    } | null>(null);
+    };
+    const [colleagueMenu, setColleagueMenu] = useState<ColleagueShiftRef | null>(null);
+    const [requestSwap, setRequestSwap] = useState<ColleagueShiftRef | null>(null);
+    const [requestTakeover, setRequestTakeover] = useState<ColleagueShiftRef | null>(null);
 
     function claimSlot(slot: AvailabilitySlot, date: string) {
         setClaimDialog({ slot, date });
@@ -167,12 +172,12 @@ export default function CaregiverScheduleIndex({
             setDialog({ action: 'menu', kind, id, date });
             return;
         }
-        // Colleague shift — find the source so we can pre-fill the request-swap dialog
+        // Colleague shift — open menu with options (ruil / overname)
         for (const client of clients) {
             if (kind === 'schedule') {
                 const s = (client.schedules ?? []).find((x) => x.id === id);
                 if (s) {
-                    setRequestSwap({
+                    setColleagueMenu({
                         kind, id, date,
                         caregiverId: s.caregiver_id,
                         caregiverName: s.caregiver?.name ?? 'Onbekend',
@@ -184,7 +189,7 @@ export default function CaregiverScheduleIndex({
             } else {
                 const ex = (client.schedule_exceptions ?? []).find((x) => x.id === id);
                 if (ex) {
-                    setRequestSwap({
+                    setColleagueMenu({
                         kind, id, date,
                         caregiverId: ex.caregiver_id,
                         caregiverName: ex.caregiver?.name ?? 'Onbekend',
@@ -385,6 +390,25 @@ export default function CaregiverScheduleIndex({
                 />
             )}
 
+            {colleagueMenu && (
+                <ColleagueShiftMenu
+                    open
+                    onOpenChange={(o) => !o && setColleagueMenu(null)}
+                    caregiverName={colleagueMenu.caregiverName}
+                    date={colleagueMenu.date}
+                    startTime={colleagueMenu.startTime}
+                    endTime={colleagueMenu.endTime}
+                    onRequestSwap={() => {
+                        setRequestSwap(colleagueMenu);
+                        setColleagueMenu(null);
+                    }}
+                    onRequestTakeover={() => {
+                        setRequestTakeover(colleagueMenu);
+                        setColleagueMenu(null);
+                    }}
+                />
+            )}
+
             {requestSwap && (
                 <RequestSwapDialog
                     open
@@ -397,6 +421,20 @@ export default function CaregiverScheduleIndex({
                     targetStartTime={requestSwap.startTime}
                     targetEndTime={requestSwap.endTime}
                     mySchedules={myOwnSchedules}
+                />
+            )}
+
+            {requestTakeover && (
+                <RequestTakeoverDialog
+                    open
+                    onOpenChange={(o) => !o && setRequestTakeover(null)}
+                    targetKind={requestTakeover.kind}
+                    targetId={requestTakeover.id}
+                    targetDate={requestTakeover.date}
+                    targetCaregiverId={requestTakeover.caregiverId}
+                    targetCaregiverName={requestTakeover.caregiverName}
+                    targetStartTime={requestTakeover.startTime}
+                    targetEndTime={requestTakeover.endTime}
                 />
             )}
         </>
