@@ -22,10 +22,10 @@ interface ClientWithSchedule extends Client {
 }
 
 type DialogState =
-    | { action: 'menu'; kind: 'schedule' | 'exception'; id: number; date: string }
-    | { action: 'takeover'; kind: 'schedule' | 'exception'; id: number; date: string }
-    | { action: 'directswap'; kind: 'schedule' | 'exception'; id: number; date: string }
-    | { action: 'openswap'; kind: 'schedule' | 'exception'; id: number; date: string };
+    | { action: 'menu'; kind: 'schedule' | 'exception'; id: number; date: string; clientId: number }
+    | { action: 'takeover'; kind: 'schedule' | 'exception'; id: number; date: string; clientId: number }
+    | { action: 'directswap'; kind: 'schedule' | 'exception'; id: number; date: string; clientId: number }
+    | { action: 'openswap'; kind: 'schedule' | 'exception'; id: number; date: string; clientId: number };
 
 export interface ShiftOccurrence {
     kind: 'schedule' | 'exception';
@@ -152,6 +152,7 @@ export default function CaregiverScheduleIndex({
         caregiverName: string;
         startTime: string;
         endTime: string;
+        clientId: number;
     };
     const [colleagueMenu, setColleagueMenu] = useState<ColleagueShiftRef | null>(null);
     const [requestSwap, setRequestSwap] = useState<ColleagueShiftRef | null>(null);
@@ -240,17 +241,32 @@ export default function CaregiverScheduleIndex({
 
 
     function handleShiftClick(kind: 'schedule' | 'exception', id: number, date: string, isMine: boolean) {
+        // Find the source client for this shift
+        let clientId: number | null = null;
+        for (const c of clients) {
+            if (kind === 'schedule' && (c.schedules ?? []).some((x) => x.id === id)) {
+                clientId = c.id;
+                break;
+            }
+            if (kind === 'exception' && (c.schedule_exceptions ?? []).some((x) => x.id === id)) {
+                clientId = c.id;
+                break;
+            }
+        }
+        if (clientId === null) return;
+
         if (isMine) {
-            setDialog({ action: 'menu', kind, id, date });
+            setDialog({ action: 'menu', kind, id, date, clientId });
             return;
         }
         // Colleague shift — open menu with options (ruil / overname)
         for (const client of clients) {
+            if (client.id !== clientId) continue;
             if (kind === 'schedule') {
                 const s = (client.schedules ?? []).find((x) => x.id === id);
                 if (s) {
                     setColleagueMenu({
-                        kind, id, date,
+                        kind, id, date, clientId,
                         caregiverId: s.caregiver_id,
                         caregiverName: s.caregiver?.name ?? 'Onbekend',
                         startTime: s.start_time,
@@ -262,7 +278,7 @@ export default function CaregiverScheduleIndex({
                 const ex = (client.schedule_exceptions ?? []).find((x) => x.id === id);
                 if (ex) {
                     setColleagueMenu({
-                        kind, id, date,
+                        kind, id, date, clientId,
                         caregiverId: ex.caregiver_id,
                         caregiverName: ex.caregiver?.name ?? 'Onbekend',
                         startTime: ex.start_time,
@@ -434,7 +450,7 @@ export default function CaregiverScheduleIndex({
                     kind={dialog.kind}
                     id={dialog.id}
                     date={dialog.date}
-                    clients={clients}
+                    clients={clients.filter((c) => c.id === dialog.clientId)}
                     myCaregiverIds={myCaregiverIds}
                 />
             )}
@@ -488,7 +504,11 @@ export default function CaregiverScheduleIndex({
                     targetCaregiverName={requestSwap.caregiverName}
                     targetStartTime={requestSwap.startTime}
                     targetEndTime={requestSwap.endTime}
-                    myOccurrences={myOwnOccurrences}
+                    myOccurrences={collectMyOccurrences(
+                        clients.filter((c) => c.id === requestSwap.clientId),
+                        myCaregiverIds,
+                        8,
+                    )}
                 />
             )}
 
