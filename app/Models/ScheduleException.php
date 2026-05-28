@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[ObservedBy(ScheduleExceptionObserver::class)]
 class ScheduleException extends Model
@@ -48,5 +49,10 @@ class ScheduleException extends Model
     public function caregiver(): BelongsTo
     {
         return $this->belongsTo(Caregiver::class);
+    }
+
+    public function takeoverOffers(): HasMany
+    {
+        return $this->hasMany(ShiftTakeoverOffer::class);
     }
 }

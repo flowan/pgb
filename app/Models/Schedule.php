@@ -39,4 +39,9 @@ class Schedule extends Model
     {
         return $this->hasMany(ScheduleException::class);
     }
+
+    public function takeoverOffers(): HasMany
+    {
+        return $this->hasMany(ShiftTakeoverOffer::class);
+    }
 }

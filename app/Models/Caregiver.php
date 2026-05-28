@@ -54,4 +54,14 @@ class Caregiver extends Model
     {
         return $this->hasMany(ScheduleException::class);
     }
+
+    public function shiftTakeoverOffersOffered(): HasMany
+    {
+        return $this->hasMany(ShiftTakeoverOffer::class, 'offered_by_caregiver_id');
+    }
+
+    public function shiftTakeoverOffersClaimed(): HasMany
+    {
+        return $this->hasMany(ShiftTakeoverOffer::class, 'claimed_by_caregiver_id');
+    }
 }
