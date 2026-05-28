@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
-import type { AvailabilitySlot, Schedule, ScheduleException } from '@/types';
+import type { AvailabilitySlot, Schedule, ScheduleException, ShiftTakeoverOffer } from '@/types';
 
 interface MonthViewProps {
     schedules: Schedule[];
     exceptions: ScheduleException[];
     availabilitySlots?: AvailabilitySlot[];
+    takeoverOffers?: ShiftTakeoverOffer[];
     monthStart: Date;
     onOpenWeek?: (date: Date) => void;
     onClaimAvailability?: (slot: AvailabilitySlot, date: string) => void;
     onUnreportSick?: (exceptionId: number) => void;
+    onClaimTakeover?: (offerId: number) => void;
     myCaregiverIds?: number[];
     onShiftClick?: (kind: 'schedule' | 'exception', id: number, date: string, isMine: boolean) => void;
 }
@@ -18,7 +20,7 @@ interface DayEvent {
     label: string;
     startTime: string;
     endTime: string;
-    variant: 'regular' | 'added' | 'modified' | 'cancelled' | 'available' | 'other';
+    variant: 'regular' | 'added' | 'modified' | 'cancelled' | 'available' | 'other' | 'offered';
     sublabel?: string;
     onClaim?: () => void;
     onAction?: () => void;
@@ -34,6 +36,7 @@ const chipStyles: Record<DayEvent['variant'], string> = {
     cancelled: 'bg-red-100 text-red-700 line-through',
     available: 'bg-purple-100 text-purple-900 border border-dashed border-purple-300',
     other: 'bg-gray-100 text-gray-500',
+    offered: 'bg-orange-100 text-orange-900 border border-dashed border-orange-300',
 };
 
 const detailStyles: Record<DayEvent['variant'], string> = {
@@ -43,6 +46,7 @@ const detailStyles: Record<DayEvent['variant'], string> = {
     cancelled: 'bg-red-50 border-red-500',
     available: 'bg-purple-50 border-dashed border-purple-400',
     other: 'bg-gray-50 border-gray-300',
+    offered: 'bg-orange-50 border-dashed border-orange-400',
 };
 
 function formatTime(time: string): string {
@@ -93,10 +97,12 @@ export function MonthView({
     schedules,
     exceptions,
     availabilitySlots = [],
+    takeoverOffers = [],
     monthStart,
     onOpenWeek,
     onClaimAvailability,
     onUnreportSick,
+    onClaimTakeover,
     myCaregiverIds = [],
     onShiftClick,
 }: MonthViewProps) {
@@ -128,6 +134,7 @@ export function MonthView({
     function getEventsForDay(date: Date, dayIndex: number): DayEvent[] {
         const dateStr = toLocalDateStr(date);
         const dayExceptions = exceptions.filter((ex) => ex.date === dateStr);
+        const dayOffers = takeoverOffers.filter((o) => o.date === dateStr);
 
         const cancelledOrModifiedIds = new Set(
             dayExceptions
@@ -142,6 +149,22 @@ export function MonthView({
             .filter((s) => s.day_of_week === dayIndex && !cancelledOrModifiedIds.has(s.id))
             .forEach((s) => {
                 const isMine = myCaregiverIds.includes(s.caregiver_id);
+                const offer = dayOffers.find((o) => o.schedule_id === s.id);
+                if (offer) {
+                    const offerByMe = myCaregiverIds.includes(offer.offered_by_caregiver_id);
+                    events.push({
+                        id: `s-${s.id}`,
+                        label: s.caregiver?.name ?? 'Onbekend',
+                        sublabel: offerByMe ? 'Aangeboden voor overname' : 'Wordt aangeboden',
+                        startTime: s.start_time,
+                        endTime: s.end_time,
+                        variant: 'offered',
+                        onClaim: !offerByMe && onClaimTakeover ? () => onClaimTakeover(offer.id) : undefined,
+                        onAction: onShiftClick ? () => onShiftClick('schedule', s.id, dateStr, isMine) : undefined,
+                        actionLabel: isMine ? 'Acties' : 'Info',
+                    });
+                    return;
+                }
                 events.push({
                     id: `s-${s.id}`,
                     label: s.caregiver?.name ?? 'Onbekend',
@@ -380,6 +403,10 @@ export function MonthView({
                 <div className="flex items-center gap-1.5">
                     <span className="h-3 w-3 rounded bg-gray-100" />
                     Collega
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <span className="h-3 w-3 rounded border border-dashed border-orange-300 bg-orange-100" />
+                    Aangeboden
                 </div>
             </div>
         </div>

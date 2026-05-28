@@ -135,9 +135,11 @@ function getMonday(date: Date): Date {
 export default function CaregiverScheduleIndex({
     clients,
     myCaregiverIds,
+    takeoverOffers,
 }: {
     clients: ClientWithSchedule[];
     myCaregiverIds: number[];
+    takeoverOffers: import('@/types').ShiftTakeoverOffer[];
 }) {
     const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
     const [view, setView] = useState<'week' | 'month'>('week');
@@ -170,6 +172,10 @@ export default function CaregiverScheduleIndex({
 
     function unreportSick(exceptionId: number) {
         router.delete(`/sick-reports/${exceptionId}`, { preserveScroll: true });
+    }
+
+    function claimTakeover(offerId: number) {
+        router.post(`/shift-takeover-offers/${offerId}/claim`, {}, { preserveScroll: true });
     }
 
     function claimSlot(slot: AvailabilitySlot, date: string) {
@@ -427,9 +433,11 @@ export default function CaregiverScheduleIndex({
                             schedules={allSchedules}
                             exceptions={allExceptions}
                             availabilitySlots={showAvailability ? allAvailabilitySlots : []}
+                            takeoverOffers={takeoverOffers}
                             weekStart={weekStart}
                             onClaimAvailability={claimSlot}
                             onUnreportSick={unreportSick}
+                            onClaimTakeover={claimTakeover}
                             myCaregiverIds={myCaregiverIds}
                             onShiftClick={handleShiftClick}
                         />
@@ -438,10 +446,12 @@ export default function CaregiverScheduleIndex({
                             schedules={allSchedules}
                             exceptions={allExceptions}
                             availabilitySlots={showAvailability ? allAvailabilitySlots : []}
+                            takeoverOffers={takeoverOffers}
                             monthStart={weekStart}
                             onOpenWeek={jumpToWeek}
                             onClaimAvailability={claimSlot}
                             onUnreportSick={unreportSick}
+                            onClaimTakeover={claimTakeover}
                             myCaregiverIds={myCaregiverIds}
                             onShiftClick={handleShiftClick}
                         />

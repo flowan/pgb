@@ -1,6 +1,6 @@
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { AvailabilitySlot, Schedule, ScheduleException } from '@/types';
+import type { AvailabilitySlot, Schedule, ScheduleException, ShiftTakeoverOffer } from '@/types';
 
 const dayNamesShort = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
 const HOUR_HEIGHT = 60;
@@ -19,12 +19,14 @@ interface WeekViewProps {
     schedules: Schedule[];
     exceptions: ScheduleException[];
     availabilitySlots?: AvailabilitySlot[];
+    takeoverOffers?: ShiftTakeoverOffer[];
     weekStart: Date;
     onDeleteSchedule?: (id: number) => void;
     onDeleteException?: (id: number) => void;
     onDeleteAvailability?: (id: number) => void;
     onClaimAvailability?: (slot: AvailabilitySlot, date: string) => void;
     onUnreportSick?: (exceptionId: number) => void;
+    onClaimTakeover?: (offerId: number) => void;
     myCaregiverIds?: number[];
     onShiftClick?: (kind: 'schedule' | 'exception', id: number, date: string, isMine: boolean) => void;
 }
@@ -44,7 +46,7 @@ interface EventBlock {
     sublabel?: string;
     startTime: string;
     endTime: string;
-    variant: 'regular' | 'added' | 'modified' | 'cancelled' | 'available' | 'other';
+    variant: 'regular' | 'added' | 'modified' | 'cancelled' | 'available' | 'other' | 'offered';
     onDelete?: () => void;
     onAction?: () => void;
     actionLabel?: string;
@@ -125,6 +127,7 @@ function EventCard({ event }: { event: PositionedEvent }) {
         cancelled: 'bg-red-50 border-red-200 text-red-400 line-through dark:bg-red-950/30 dark:border-red-800 dark:text-red-400',
         available: 'bg-purple-50 border-purple-300 border-dashed text-purple-900 dark:bg-purple-950/40 dark:border-purple-700 dark:text-purple-200',
         other: 'bg-gray-50 border-gray-200 text-gray-500 dark:bg-gray-900/40 dark:border-gray-700 dark:text-gray-400',
+        offered: 'bg-orange-50 border-orange-300 border-dashed text-orange-900 dark:bg-orange-950/40 dark:border-orange-700 dark:text-orange-200',
     };
 
     const timeStyles = {
@@ -134,6 +137,7 @@ function EventCard({ event }: { event: PositionedEvent }) {
         cancelled: 'text-red-400 dark:text-red-500',
         available: 'text-purple-600 dark:text-purple-400',
         other: 'text-gray-400 dark:text-gray-500',
+        offered: 'text-orange-600 dark:text-orange-400',
     };
 
     return (
@@ -218,12 +222,14 @@ export function WeekView({
     schedules,
     exceptions,
     availabilitySlots = [],
+    takeoverOffers = [],
     weekStart,
     onDeleteSchedule,
     onDeleteException,
     onDeleteAvailability,
     onClaimAvailability,
     onUnreportSick,
+    onClaimTakeover,
     myCaregiverIds = [],
     onShiftClick,
 }: WeekViewProps) {
@@ -236,6 +242,7 @@ export function WeekView({
     function getEventsForDay(dayIndex: number, date: Date): EventBlock[] {
         const dateStr = toLocalDateStr(date);
         const dayExceptions = exceptions.filter((ex) => ex.date === dateStr);
+        const dayOffers = (takeoverOffers ?? []).filter((o) => o.date === dateStr);
 
         const cancelledOrModifiedIds = new Set(
             dayExceptions
@@ -250,6 +257,23 @@ export function WeekView({
             .filter((s) => s.day_of_week === dayIndex && !cancelledOrModifiedIds.has(s.id))
             .forEach((s) => {
                 const isMine = myCaregiverIds.includes(s.caregiver_id);
+                const offer = dayOffers.find((o) => o.schedule_id === s.id);
+                if (offer) {
+                    const offerByMe = myCaregiverIds.includes(offer.offered_by_caregiver_id);
+                    events.push({
+                        id: `s-${s.id}`,
+                        label: s.caregiver?.name ?? 'Onbekend',
+                        sublabel: offerByMe ? 'Aangeboden voor overname' : 'Wordt aangeboden',
+                        startTime: s.start_time,
+                        endTime: s.end_time,
+                        variant: 'offered',
+                        onAction: !offerByMe && onClaimTakeover
+                            ? () => onClaimTakeover(offer.id)
+                            : (onShiftClick ? () => onShiftClick('schedule', s.id, dateStr, isMine) : undefined),
+                        actionLabel: !offerByMe && onClaimTakeover ? 'Claimen' : (isMine ? 'Acties' : 'Info'),
+                    });
+                    return;
+                }
                 events.push({
                     id: `s-${s.id}`,
                     label: s.caregiver?.name ?? 'Onbekend',
@@ -434,6 +458,10 @@ export function WeekView({
                 <div className="flex items-center gap-1.5">
                     <span className="h-3 w-3 rounded border border-gray-200 bg-gray-50" />
                     Collega
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <span className="h-3 w-3 rounded border border-dashed border-orange-300 bg-orange-50" />
+                    Aangeboden
                 </div>
             </div>
         </div>
