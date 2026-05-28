@@ -17,6 +17,8 @@ interface WeekViewProps {
     onDeleteException?: (id: number) => void;
     onDeleteAvailability?: (id: number) => void;
     onClaimAvailability?: (id: number) => void;
+    myCaregiverIds?: number[];
+    onShiftClick?: (kind: 'schedule' | 'exception', id: number, date: string, isMine: boolean) => void;
 }
 
 function timeToMinutes(time: string): number {
@@ -34,7 +36,7 @@ interface EventBlock {
     sublabel?: string;
     startTime: string;
     endTime: string;
-    variant: 'regular' | 'added' | 'modified' | 'cancelled' | 'available';
+    variant: 'regular' | 'added' | 'modified' | 'cancelled' | 'available' | 'other';
     onDelete?: () => void;
     onAction?: () => void;
     actionLabel?: string;
@@ -114,6 +116,7 @@ function EventCard({ event }: { event: PositionedEvent }) {
         modified: 'bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-200',
         cancelled: 'bg-red-50 border-red-200 text-red-400 line-through dark:bg-red-950/30 dark:border-red-800 dark:text-red-400',
         available: 'bg-purple-50 border-purple-300 border-dashed text-purple-900 dark:bg-purple-950/40 dark:border-purple-700 dark:text-purple-200',
+        other: 'bg-gray-50 border-gray-200 text-gray-500 dark:bg-gray-900/40 dark:border-gray-700 dark:text-gray-400',
     };
 
     const timeStyles = {
@@ -122,6 +125,7 @@ function EventCard({ event }: { event: PositionedEvent }) {
         modified: 'text-amber-600 dark:text-amber-400',
         cancelled: 'text-red-400 dark:text-red-500',
         available: 'text-purple-600 dark:text-purple-400',
+        other: 'text-gray-400 dark:text-gray-500',
     };
 
     return (
@@ -211,6 +215,8 @@ export function WeekView({
     onDeleteException,
     onDeleteAvailability,
     onClaimAvailability,
+    myCaregiverIds = [],
+    onShiftClick,
 }: WeekViewProps) {
     const days = Array.from({ length: 7 }, (_, i) => {
         const date = new Date(weekStart);
@@ -234,17 +240,21 @@ export function WeekView({
         schedules
             .filter((s) => s.day_of_week === dayIndex && !cancelledOrModifiedIds.has(s.id))
             .forEach((s) => {
+                const isMine = myCaregiverIds.includes(s.caregiver_id);
                 events.push({
                     id: `s-${s.id}`,
                     label: s.caregiver?.name ?? 'Onbekend',
                     startTime: s.start_time,
                     endTime: s.end_time,
-                    variant: 'regular',
-                    onDelete: onDeleteSchedule ? () => onDeleteSchedule(s.id) : undefined,
+                    variant: isMine ? 'regular' : 'other',
+                    onDelete: isMine && onDeleteSchedule ? () => onDeleteSchedule(s.id) : undefined,
+                    onAction: onShiftClick ? () => onShiftClick('schedule', s.id, dateStr, isMine) : undefined,
+                    actionLabel: isMine ? 'Acties' : 'Info',
                 });
             });
 
         dayExceptions.forEach((ex) => {
+            const isMine = myCaregiverIds.includes(ex.caregiver_id);
             if (ex.type === 'cancelled') {
                 events.push({
                     id: `c-${ex.id}`,
@@ -253,7 +263,7 @@ export function WeekView({
                     startTime: ex.start_time,
                     endTime: ex.end_time,
                     variant: 'cancelled',
-                    onDelete: onDeleteException ? () => onDeleteException(ex.id) : undefined,
+                    onDelete: isMine && onDeleteException ? () => onDeleteException(ex.id) : undefined,
                 });
             } else if (ex.type === 'modified') {
                 events.push({
@@ -262,8 +272,10 @@ export function WeekView({
                     sublabel: 'Gewijzigd',
                     startTime: ex.start_time,
                     endTime: ex.end_time,
-                    variant: 'modified',
-                    onDelete: onDeleteException ? () => onDeleteException(ex.id) : undefined,
+                    variant: isMine ? 'modified' : 'other',
+                    onDelete: isMine && onDeleteException ? () => onDeleteException(ex.id) : undefined,
+                    onAction: onShiftClick ? () => onShiftClick('exception', ex.id, dateStr, isMine) : undefined,
+                    actionLabel: isMine ? 'Acties' : 'Info',
                 });
             } else if (ex.type === 'added') {
                 events.push({
@@ -272,8 +284,10 @@ export function WeekView({
                     sublabel: 'Extra afspraak',
                     startTime: ex.start_time,
                     endTime: ex.end_time,
-                    variant: 'added',
-                    onDelete: onDeleteException ? () => onDeleteException(ex.id) : undefined,
+                    variant: isMine ? 'added' : 'other',
+                    onDelete: isMine && onDeleteException ? () => onDeleteException(ex.id) : undefined,
+                    onAction: onShiftClick ? () => onShiftClick('exception', ex.id, dateStr, isMine) : undefined,
+                    actionLabel: isMine ? 'Acties' : 'Info',
                 });
             }
         });
@@ -400,6 +414,10 @@ export function WeekView({
                 <div className="flex items-center gap-1.5">
                     <span className="h-3 w-3 rounded border border-dashed border-purple-300 bg-purple-50" />
                     Beschikbaar
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <span className="h-3 w-3 rounded border border-gray-200 bg-gray-50" />
+                    Collega
                 </div>
             </div>
         </div>

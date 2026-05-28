@@ -4,12 +4,41 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { WeekView } from '@/components/schedule/week-view';
 import { MonthView } from '@/components/schedule/month-view';
+import { ShiftActionMenu } from '@/components/schedule/shift-action-menu';
+import { TakeoverOfferDialog } from '@/components/schedule/takeover-offer-dialog';
+import { DirectSwapDialog } from '@/components/schedule/direct-swap-dialog';
+import { OpenSwapDialog } from '@/components/schedule/open-swap-dialog';
 import type { AvailabilitySlot, Caregiver, Client, Schedule, ScheduleException } from '@/types';
 
 interface ClientWithSchedule extends Client {
     schedules: Schedule[];
     schedule_exceptions: ScheduleException[];
     availability_slots: AvailabilitySlot[];
+    caregivers: Caregiver[];
+}
+
+type DialogState =
+    | { action: 'menu'; kind: 'schedule' | 'exception'; id: number; date: string }
+    | { action: 'takeover'; kind: 'schedule' | 'exception'; id: number; date: string }
+    | { action: 'directswap'; kind: 'schedule' | 'exception'; id: number; date: string }
+    | { action: 'openswap'; kind: 'schedule' | 'exception'; id: number; date: string };
+
+function collectColleagues(
+    clients: ClientWithSchedule[],
+    myIds: number[],
+): (Caregiver & { schedules?: Schedule[] })[] {
+    const seen = new Set<number>();
+    const colleagues: (Caregiver & { schedules?: Schedule[] })[] = [];
+    for (const client of clients) {
+        for (const cg of client.caregivers ?? []) {
+            if (myIds.includes(cg.id)) continue;
+            if (seen.has(cg.id)) continue;
+            seen.add(cg.id);
+            const cgSchedules = (client.schedules ?? []).filter((s) => s.caregiver_id === cg.id);
+            colleagues.push({ ...cg, schedules: cgSchedules });
+        }
+    }
+    return colleagues;
 }
 
 function getMonday(date: Date): Date {
@@ -23,12 +52,15 @@ function getMonday(date: Date): Date {
 
 export default function CaregiverScheduleIndex({
     clients,
+    myCaregiverIds,
 }: {
     clients: ClientWithSchedule[];
+    myCaregiverIds: number[];
 }) {
     const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
     const [view, setView] = useState<'week' | 'month'>('week');
     const [showAvailability, setShowAvailability] = useState(true);
+    const [dialog, setDialog] = useState<DialogState | null>(null);
 
     function claimSlot(slotId: number) {
         router.post(`/availability-slots/${slotId}/claim`);
@@ -66,28 +98,23 @@ export default function CaregiverScheduleIndex({
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
 
-    // Merge all clients' data into single arrays, replacing the caregiver name
-    // with the client name so the user sees which client each appointment is for.
-    const allSchedules: Schedule[] = clients.flatMap((client) =>
-        (client.schedules ?? []).map((s) => ({
-            ...s,
-            caregiver: { ...(s.caregiver as Caregiver), name: client.name },
-        })),
-    );
-
-    const allExceptions: ScheduleException[] = clients.flatMap((client) =>
-        (client.schedule_exceptions ?? []).map((ex) => ({
-            ...ex,
-            caregiver: { ...(ex.caregiver as Caregiver), name: client.name },
-        })),
-    );
-
+    // Pass the raw data through — we now want to see the real caregiver name
+    // so colleagues' shifts are distinguishable from your own.
+    const allSchedules: Schedule[] = clients.flatMap((c) => c.schedules ?? []);
+    const allExceptions: ScheduleException[] = clients.flatMap((c) => c.schedule_exceptions ?? []);
     const allAvailabilitySlots: AvailabilitySlot[] = clients.flatMap((client) =>
         (client.availability_slots ?? []).map((slot) => ({
             ...slot,
             notes: client.name + (slot.notes ? ` — ${slot.notes}` : ''),
         })),
     );
+
+    const colleagues = collectColleagues(clients, myCaregiverIds);
+
+    function handleShiftClick(kind: 'schedule' | 'exception', id: number, date: string, isMine: boolean) {
+        if (!isMine) return;
+        setDialog({ action: 'menu', kind, id, date });
+    }
 
     return (
         <>
@@ -157,6 +184,8 @@ export default function CaregiverScheduleIndex({
                             availabilitySlots={showAvailability ? allAvailabilitySlots : []}
                             weekStart={weekStart}
                             onClaimAvailability={claimSlot}
+                            myCaregiverIds={myCaregiverIds}
+                            onShiftClick={handleShiftClick}
                         />
                     ) : (
                         <MonthView
@@ -166,10 +195,53 @@ export default function CaregiverScheduleIndex({
                             monthStart={weekStart}
                             onOpenWeek={jumpToWeek}
                             onClaimAvailability={claimSlot}
+                            myCaregiverIds={myCaregiverIds}
+                            onShiftClick={handleShiftClick}
                         />
                     )
                 )}
             </div>
+
+            {dialog?.action === 'menu' && (
+                <ShiftActionMenu
+                    open
+                    onOpenChange={(o) => !o && setDialog(null)}
+                    onTakeover={() => setDialog({ ...dialog, action: 'takeover' })}
+                    onDirectSwap={() => setDialog({ ...dialog, action: 'directswap' })}
+                    onOpenSwap={() => setDialog({ ...dialog, action: 'openswap' })}
+                />
+            )}
+
+            {dialog?.action === 'takeover' && (
+                <TakeoverOfferDialog
+                    open
+                    onOpenChange={(o) => !o && setDialog(null)}
+                    kind={dialog.kind}
+                    id={dialog.id}
+                    date={dialog.date}
+                />
+            )}
+
+            {dialog?.action === 'directswap' && (
+                <DirectSwapDialog
+                    open
+                    onOpenChange={(o) => !o && setDialog(null)}
+                    kind={dialog.kind}
+                    id={dialog.id}
+                    date={dialog.date}
+                    colleagues={colleagues}
+                />
+            )}
+
+            {dialog?.action === 'openswap' && (
+                <OpenSwapDialog
+                    open
+                    onOpenChange={(o) => !o && setDialog(null)}
+                    kind={dialog.kind}
+                    id={dialog.id}
+                    date={dialog.date}
+                />
+            )}
         </>
     );
 }

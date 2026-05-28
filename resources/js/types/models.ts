@@ -74,3 +74,58 @@ export interface AvailabilitySlot {
     claimed_at: string | null;
     notes: string | null;
 }
+
+export interface ShiftTakeoverOffer {
+    id: number;
+    schedule_id: number | null;
+    schedule_exception_id: number | null;
+    date: string;
+    offered_by_caregiver_id: number;
+    status: 'open' | 'claimed' | 'cancelled' | 'expired';
+    claimed_by_caregiver_id: number | null;
+    claimed_at: string | null;
+    notes: string | null;
+    offered_by?: Caregiver;
+    claimed_by?: Caregiver;
+}
+
+export interface ShiftSwapRequest {
+    id: number;
+    requester_caregiver_id: number;
+    requester_schedule_id: number | null;
+    requester_schedule_exception_id: number | null;
+    requester_date: string;
+    target_caregiver_id: number;
+    target_schedule_id: number | null;
+    target_schedule_exception_id: number | null;
+    target_date: string;
+    status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired';
+    responded_at: string | null;
+    decline_reason: string | null;
+    requester?: Caregiver;
+    target?: Caregiver;
+}
+
+export interface OpenSwapRequest {
+    id: number;
+    schedule_id: number | null;
+    schedule_exception_id: number | null;
+    date: string;
+    requester_caregiver_id: number;
+    status: 'open' | 'fulfilled' | 'cancelled' | 'expired';
+    selected_offer_id: number | null;
+    notes: string | null;
+    requester?: Caregiver;
+    offers?: OpenSwapOffer[];
+}
+
+export interface OpenSwapOffer {
+    id: number;
+    open_swap_request_id: number;
+    offered_by_caregiver_id: number;
+    offered_schedule_id: number | null;
+    offered_schedule_exception_id: number | null;
+    offered_date: string;
+    status: 'pending' | 'accepted' | 'declined' | 'withdrawn';
+    offered_by?: Caregiver;
+}

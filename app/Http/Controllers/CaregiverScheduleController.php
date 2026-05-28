@@ -11,18 +11,16 @@ class CaregiverScheduleController extends Controller
     public function __invoke(): Response
     {
         $user = auth()->user();
-
-        $caregiverRecords = Caregiver::where('user_id', $user->id)->get();
+        $caregiverRecords = Caregiver::where('user_id', $user->id)->with('client')->get();
+        $myCaregiverIds = $caregiverRecords->pluck('id')->toArray();
 
         $clients = $caregiverRecords->map(function (Caregiver $caregiver) {
             $client = $caregiver->client;
             $client->load([
-                'schedules' => fn ($q) => $q->where('caregiver_id', $caregiver->id),
                 'schedules.caregiver',
-                'scheduleExceptions' => fn ($q) => $q->where('caregiver_id', $caregiver->id),
                 'scheduleExceptions.caregiver',
+                'caregivers',
             ]);
-
             $client->setRelation(
                 'availabilitySlots',
                 $client->availabilitySlots()->where('status', 'open')->get()
@@ -33,6 +31,7 @@ class CaregiverScheduleController extends Controller
 
         return Inertia::render('caregiver-schedule/index', [
             'clients' => $clients,
+            'myCaregiverIds' => $myCaregiverIds,
         ]);
     }
 }

@@ -44,7 +44,7 @@ class CaregiverScheduleTest extends TestCase
         );
     }
 
-    public function test_caregiver_only_sees_own_schedules(): void
+    public function test_caregiver_sees_colleagues_schedules_for_same_client(): void
     {
         $budgetHolder = User::factory()->create(['role' => UserRole::BudgetHolder]);
         $caregiverUser = User::factory()->create(['role' => UserRole::Caregiver]);
@@ -78,7 +78,9 @@ class CaregiverScheduleTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('caregiver-schedule/index')
             ->has('clients', 1)
-            ->has('clients.0.schedules', 1)
+            ->has('clients.0.schedules', 2)
+            ->has('myCaregiverIds', 1)
+            ->where('myCaregiverIds.0', $ownCaregiver->id)
         );
     }
 

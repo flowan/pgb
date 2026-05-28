@@ -8,6 +8,8 @@ interface MonthViewProps {
     monthStart: Date;
     onOpenWeek?: (date: Date) => void;
     onClaimAvailability?: (id: number) => void;
+    myCaregiverIds?: number[];
+    onShiftClick?: (kind: 'schedule' | 'exception', id: number, date: string, isMine: boolean) => void;
 }
 
 interface DayEvent {
@@ -15,9 +17,11 @@ interface DayEvent {
     label: string;
     startTime: string;
     endTime: string;
-    variant: 'regular' | 'added' | 'modified' | 'cancelled' | 'available';
+    variant: 'regular' | 'added' | 'modified' | 'cancelled' | 'available' | 'other';
     sublabel?: string;
     onClaim?: () => void;
+    onAction?: () => void;
+    actionLabel?: string;
 }
 
 const dayNamesShort = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
@@ -28,6 +32,7 @@ const chipStyles: Record<DayEvent['variant'], string> = {
     modified: 'bg-amber-100 text-amber-900',
     cancelled: 'bg-red-100 text-red-700 line-through',
     available: 'bg-purple-100 text-purple-900 border border-dashed border-purple-300',
+    other: 'bg-gray-100 text-gray-500',
 };
 
 const detailStyles: Record<DayEvent['variant'], string> = {
@@ -36,6 +41,7 @@ const detailStyles: Record<DayEvent['variant'], string> = {
     modified: 'bg-amber-50 border-amber-500',
     cancelled: 'bg-red-50 border-red-500',
     available: 'bg-purple-50 border-dashed border-purple-400',
+    other: 'bg-gray-50 border-gray-300',
 };
 
 function formatTime(time: string): string {
@@ -82,6 +88,8 @@ export function MonthView({
     monthStart,
     onOpenWeek,
     onClaimAvailability,
+    myCaregiverIds = [],
+    onShiftClick,
 }: MonthViewProps) {
     const [openDay, setOpenDay] = useState<string | null>(null);
     const popoverRef = useRef<HTMLDivElement>(null);
@@ -124,18 +132,24 @@ export function MonthView({
         schedules
             .filter((s) => s.day_of_week === dayIndex && !cancelledOrModifiedIds.has(s.id))
             .forEach((s) => {
+                const isMine = myCaregiverIds.includes(s.caregiver_id);
                 events.push({
                     id: `s-${s.id}`,
                     label: s.caregiver?.name ?? 'Onbekend',
                     startTime: s.start_time,
                     endTime: s.end_time,
-                    variant: 'regular',
+                    variant: isMine ? 'regular' : 'other',
+                    onAction: onShiftClick ? () => onShiftClick('schedule', s.id, dateStr, isMine) : undefined,
+                    actionLabel: isMine ? 'Acties' : 'Info',
                 });
             });
 
         dayExceptions.forEach((ex) => {
-            const variant: DayEvent['variant'] =
+            const isMine = myCaregiverIds.includes(ex.caregiver_id);
+            const baseVariant: DayEvent['variant'] =
                 ex.type === 'cancelled' ? 'cancelled' : ex.type === 'modified' ? 'modified' : 'added';
+            const variant: DayEvent['variant'] =
+                ex.type === 'cancelled' ? 'cancelled' : isMine ? baseVariant : 'other';
             const sublabel =
                 ex.type === 'cancelled' ? 'Geannuleerd' : ex.type === 'modified' ? 'Gewijzigd' : 'Extra';
             events.push({
@@ -145,6 +159,8 @@ export function MonthView({
                 endTime: ex.end_time,
                 variant,
                 sublabel,
+                onAction: ex.type !== 'cancelled' && onShiftClick ? () => onShiftClick('exception', ex.id, dateStr, isMine) : undefined,
+                actionLabel: isMine ? 'Acties' : 'Info',
             });
         });
 
@@ -282,6 +298,18 @@ export function MonthView({
                                                             Claimen
                                                         </button>
                                                     )}
+                                                    {event.onAction && (
+                                                        <button
+                                                            className="shrink-0 rounded bg-gray-200 px-2 py-0.5 text-[10px] font-medium text-gray-700 hover:bg-gray-300"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setOpenDay(null);
+                                                                event.onAction!();
+                                                            }}
+                                                        >
+                                                            {event.actionLabel ?? 'Acties'}
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
@@ -326,6 +354,10 @@ export function MonthView({
                 <div className="flex items-center gap-1.5">
                     <span className="h-3 w-3 rounded border border-dashed border-purple-300 bg-purple-100" />
                     Beschikbaar
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <span className="h-3 w-3 rounded bg-gray-100" />
+                    Collega
                 </div>
             </div>
         </div>
