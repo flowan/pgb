@@ -423,15 +423,26 @@ export default function CaregiverScheduleIndex({
                 )}
             </div>
 
-            {dialog?.action === 'menu' && (
-                <ShiftActionMenu
-                    open
-                    onOpenChange={(o) => !o && setDialog(null)}
-                    onTakeover={() => setDialog({ ...dialog, action: 'takeover' })}
-                    onDirectSwap={() => setDialog({ ...dialog, action: 'directswap' })}
-                    onOpenSwap={() => setDialog({ ...dialog, action: 'openswap' })}
-                />
-            )}
+            {dialog?.action === 'menu' && (() => {
+                const client = clients.find((c) => c.id === dialog.clientId);
+                const shift = dialog.kind === 'schedule'
+                    ? client?.schedules?.find((x) => x.id === dialog.id)
+                    : client?.schedule_exceptions?.find((x) => x.id === dialog.id);
+                if (!client || !shift) return null;
+                return (
+                    <ShiftActionMenu
+                        open
+                        onOpenChange={(o) => !o && setDialog(null)}
+                        clientName={client.name}
+                        date={dialog.date}
+                        startTime={shift.start_time}
+                        endTime={shift.end_time}
+                        onTakeover={() => setDialog({ ...dialog, action: 'takeover' })}
+                        onDirectSwap={() => setDialog({ ...dialog, action: 'directswap' })}
+                        onOpenSwap={() => setDialog({ ...dialog, action: 'openswap' })}
+                    />
+                );
+            })()}
 
             {dialog?.action === 'takeover' && (
                 <TakeoverOfferDialog
