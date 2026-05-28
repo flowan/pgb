@@ -9,6 +9,7 @@ import { TakeoverOfferDialog } from '@/components/schedule/takeover-offer-dialog
 import { DirectSwapDialog } from '@/components/schedule/direct-swap-dialog';
 import { OpenSwapDialog } from '@/components/schedule/open-swap-dialog';
 import { AvailabilityClaimDialog } from '@/components/schedule/availability-claim-dialog';
+import { RequestSwapDialog } from '@/components/schedule/request-swap-dialog';
 import type { AvailabilitySlot, Caregiver, Client, Schedule, ScheduleException } from '@/types';
 
 interface ClientWithSchedule extends Client {
@@ -68,6 +69,15 @@ export default function CaregiverScheduleIndex({
     const [showColleagues, setShowColleagues] = useState(true);
     const [dialog, setDialog] = useState<DialogState | null>(null);
     const [claimDialog, setClaimDialog] = useState<{ slot: AvailabilitySlot; date: string } | null>(null);
+    const [requestSwap, setRequestSwap] = useState<{
+        kind: 'schedule' | 'exception';
+        id: number;
+        date: string;
+        caregiverId: number;
+        caregiverName: string;
+        startTime: string;
+        endTime: string;
+    } | null>(null);
 
     function claimSlot(slot: AvailabilitySlot, date: string) {
         setClaimDialog({ slot, date });
@@ -153,9 +163,49 @@ export default function CaregiverScheduleIndex({
     const colleagues = collectColleagues(clients, myCaregiverIds);
 
     function handleShiftClick(kind: 'schedule' | 'exception', id: number, date: string, isMine: boolean) {
-        if (!isMine) return;
-        setDialog({ action: 'menu', kind, id, date });
+        if (isMine) {
+            setDialog({ action: 'menu', kind, id, date });
+            return;
+        }
+        // Colleague shift — find the source so we can pre-fill the request-swap dialog
+        for (const client of clients) {
+            if (kind === 'schedule') {
+                const s = (client.schedules ?? []).find((x) => x.id === id);
+                if (s) {
+                    setRequestSwap({
+                        kind, id, date,
+                        caregiverId: s.caregiver_id,
+                        caregiverName: s.caregiver?.name ?? 'Onbekend',
+                        startTime: s.start_time,
+                        endTime: s.end_time,
+                    });
+                    return;
+                }
+            } else {
+                const ex = (client.schedule_exceptions ?? []).find((x) => x.id === id);
+                if (ex) {
+                    setRequestSwap({
+                        kind, id, date,
+                        caregiverId: ex.caregiver_id,
+                        caregiverName: ex.caregiver?.name ?? 'Onbekend',
+                        startTime: ex.start_time,
+                        endTime: ex.end_time,
+                    });
+                    return;
+                }
+            }
+        }
     }
+
+    // All my own recurring schedules across clients — used as options when proposing a swap
+    const myOwnSchedules: Schedule[] = clients.flatMap((c) =>
+        (c.schedules ?? [])
+            .filter((s) => myCaregiverIds.includes(s.caregiver_id))
+            .map((s) => ({
+                ...s,
+                caregiver: { ...(s.caregiver as Caregiver), name: c.name },
+            })),
+    );
 
     return (
         <>
@@ -332,6 +382,21 @@ export default function CaregiverScheduleIndex({
                     onOpenChange={(o) => !o && setClaimDialog(null)}
                     slot={claimDialog.slot}
                     date={claimDialog.date}
+                />
+            )}
+
+            {requestSwap && (
+                <RequestSwapDialog
+                    open
+                    onOpenChange={(o) => !o && setRequestSwap(null)}
+                    targetKind={requestSwap.kind}
+                    targetId={requestSwap.id}
+                    targetDate={requestSwap.date}
+                    targetCaregiverId={requestSwap.caregiverId}
+                    targetCaregiverName={requestSwap.caregiverName}
+                    targetStartTime={requestSwap.startTime}
+                    targetEndTime={requestSwap.endTime}
+                    mySchedules={myOwnSchedules}
                 />
             )}
         </>
