@@ -89,6 +89,8 @@ function renderText(item: { type: string; data: Record<string, unknown> }): stri
             return 'Jouw aanbod is afgewezen';
         case 'App\\Notifications\\ShiftRequestAutoCancelled':
             return 'Een verzoek is automatisch geannuleerd';
+        case 'App\\Notifications\\CaregiverReportedSick':
+            return `${item.data.caregiver} heeft zich ziek gemeld op ${item.data.date}`;
         default:
             return 'Nieuwe melding';
     }

@@ -6,9 +6,11 @@ use App\Enums\ScheduleExceptionType;
 use App\Enums\ShiftTakeoverOfferStatus;
 use App\Enums\UserRole;
 use App\Models\Caregiver;
+use App\Models\Client;
 use App\Models\Schedule;
 use App\Models\ScheduleException;
 use App\Models\ShiftTakeoverOffer;
+use App\Notifications\CaregiverReportedSick;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -156,6 +158,12 @@ class SickReportController extends Controller
             'status' => ShiftTakeoverOfferStatus::Open,
             'notes' => 'Automatisch aangemaakt na ziekmelding',
         ]);
+
+        $client = Client::find($schedule->client_id);
+        $caregiverModel = Caregiver::find($caregiverId);
+        if ($client && $caregiverModel) {
+            CaregiverReportedSick::notifyBudgetHolder($client, $caregiverModel, $cancellation);
+        }
     }
 
     private function createSicknessFromException(ScheduleException $exception): void
@@ -176,6 +184,12 @@ class SickReportController extends Controller
             'status' => ShiftTakeoverOfferStatus::Open,
             'notes' => 'Automatisch aangemaakt na ziekmelding',
         ]);
+
+        $client = Client::find($exception->client_id);
+        $caregiverModel = Caregiver::find($exception->caregiver_id);
+        if ($client && $caregiverModel) {
+            CaregiverReportedSick::notifyBudgetHolder($client, $caregiverModel, $exception);
+        }
     }
 
     private function ownDayOfWeek(CarbonImmutable $d): int
