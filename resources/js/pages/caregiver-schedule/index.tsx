@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { WeekView } from '@/components/schedule/week-view';
+import { MonthView } from '@/components/schedule/month-view';
 import type { AvailabilitySlot, Caregiver, Client, Schedule, ScheduleException } from '@/types';
 
 interface ClientWithSchedule extends Client {
@@ -26,25 +27,39 @@ export default function CaregiverScheduleIndex({
     clients: ClientWithSchedule[];
 }) {
     const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
+    const [view, setView] = useState<'week' | 'month'>('week');
 
     function claimSlot(slotId: number) {
         router.post(`/availability-slots/${slotId}/claim`);
     }
 
-    function prevWeek() {
-        setWeekStart((prev) => {
-            const d = new Date(prev);
-            d.setDate(d.getDate() - 7);
+    function prev() {
+        setWeekStart((p) => {
+            const d = new Date(p);
+            if (view === 'week') {
+                d.setDate(d.getDate() - 7);
+            } else {
+                d.setMonth(d.getMonth() - 1);
+            }
             return d;
         });
     }
 
-    function nextWeek() {
-        setWeekStart((prev) => {
-            const d = new Date(prev);
-            d.setDate(d.getDate() + 7);
+    function next() {
+        setWeekStart((p) => {
+            const d = new Date(p);
+            if (view === 'week') {
+                d.setDate(d.getDate() + 7);
+            } else {
+                d.setMonth(d.getMonth() + 1);
+            }
             return d;
         });
+    }
+
+    function jumpToWeek(date: Date) {
+        setWeekStart(getMonday(date));
+        setView('week');
     }
 
     const weekEnd = new Date(weekStart);
@@ -80,35 +95,44 @@ export default function CaregiverScheduleIndex({
             <div className="flex flex-col gap-6 p-4">
                 <h1 className="text-2xl font-semibold">Mijn rooster</h1>
 
-                {/* Week navigation */}
-                <div className="flex items-center gap-3">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setWeekStart(getMonday(new Date()))}
-                    >
-                        Vandaag
-                    </Button>
-                    <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" onClick={prevWeek}>
-                            <ChevronLeft />
+                {/* Navigation + view toggle */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setWeekStart(getMonday(new Date()))}
+                        >
+                            Vandaag
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={nextWeek}>
-                            <ChevronRight />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" onClick={prev}>
+                                <ChevronLeft />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={next}>
+                                <ChevronRight />
+                            </Button>
+                        </div>
+                        <span className="text-lg font-medium">
+                            {view === 'week'
+                                ? `${weekStart.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' })} – ${weekEnd.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}`
+                                : weekStart.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' })}
+                        </span>
                     </div>
-                    <span className="text-lg font-medium">
-                        {weekStart.toLocaleDateString('nl-NL', {
-                            day: 'numeric',
-                            month: 'long',
-                        })}{' '}
-                        –{' '}
-                        {weekEnd.toLocaleDateString('nl-NL', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric',
-                        })}
-                    </span>
+                    <div className="flex items-center gap-1 rounded-lg bg-muted p-0.5">
+                        <button
+                            className={`rounded-md px-3 py-1 text-sm ${view === 'week' ? 'bg-white font-medium shadow-sm dark:bg-gray-800' : 'hover:bg-white/50'}`}
+                            onClick={() => setView('week')}
+                        >
+                            Week
+                        </button>
+                        <button
+                            className={`rounded-md px-3 py-1 text-sm ${view === 'month' ? 'bg-white font-medium shadow-sm dark:bg-gray-800' : 'hover:bg-white/50'}`}
+                            onClick={() => setView('month')}
+                        >
+                            Maand
+                        </button>
+                    </div>
                 </div>
 
                 {clients.length === 0 ? (
@@ -116,13 +140,24 @@ export default function CaregiverScheduleIndex({
                         Je bent nog niet gekoppeld aan een cliënt.
                     </div>
                 ) : (
-                    <WeekView
-                        schedules={allSchedules}
-                        exceptions={allExceptions}
-                        availabilitySlots={allAvailabilitySlots}
-                        weekStart={weekStart}
-                        onClaimAvailability={claimSlot}
-                    />
+                    view === 'week' ? (
+                        <WeekView
+                            schedules={allSchedules}
+                            exceptions={allExceptions}
+                            availabilitySlots={allAvailabilitySlots}
+                            weekStart={weekStart}
+                            onClaimAvailability={claimSlot}
+                        />
+                    ) : (
+                        <MonthView
+                            schedules={allSchedules}
+                            exceptions={allExceptions}
+                            availabilitySlots={allAvailabilitySlots}
+                            monthStart={weekStart}
+                            onOpenWeek={jumpToWeek}
+                            onClaimAvailability={claimSlot}
+                        />
+                    )
                 )}
             </div>
         </>

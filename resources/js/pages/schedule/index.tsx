@@ -13,6 +13,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { WeekView } from '@/components/schedule/week-view';
+import { MonthView } from '@/components/schedule/month-view';
 import type { AvailabilitySlot, Caregiver, Client, Schedule, ScheduleException } from '@/types';
 
 const dayOptions = [
@@ -48,6 +49,7 @@ export default function ScheduleIndex({
     availabilitySlots: AvailabilitySlot[];
 }) {
     const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
+    const [view, setView] = useState<'week' | 'month'>('week');
     const [showScheduleForm, setShowScheduleForm] = useState(false);
     const [showExceptionForm, setShowExceptionForm] = useState(false);
     const [showAvailabilityForm, setShowAvailabilityForm] = useState(false);
@@ -79,20 +81,33 @@ export default function ScheduleIndex({
         notes: '',
     });
 
-    function prevWeek() {
+    function prev() {
         setWeekStart((prev) => {
             const d = new Date(prev);
-            d.setDate(d.getDate() - 7);
+            if (view === 'week') {
+                d.setDate(d.getDate() - 7);
+            } else {
+                d.setMonth(d.getMonth() - 1);
+            }
             return d;
         });
     }
 
-    function nextWeek() {
+    function next() {
         setWeekStart((prev) => {
             const d = new Date(prev);
-            d.setDate(d.getDate() + 7);
+            if (view === 'week') {
+                d.setDate(d.getDate() + 7);
+            } else {
+                d.setMonth(d.getMonth() + 1);
+            }
             return d;
         });
+    }
+
+    function jumpToWeek(date: Date) {
+        setWeekStart(getMonday(date));
+        setView('week');
     }
 
     function submitSchedule(e: React.FormEvent) {
@@ -186,7 +201,7 @@ export default function ScheduleIndex({
                     </div>
                 </div>
 
-                {/* Week navigation */}
+                {/* Navigation + view toggle */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Button
@@ -197,25 +212,32 @@ export default function ScheduleIndex({
                             Vandaag
                         </Button>
                         <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="sm" onClick={prevWeek}>
+                            <Button variant="ghost" size="sm" onClick={prev}>
                                 <ChevronLeft />
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={nextWeek}>
+                            <Button variant="ghost" size="sm" onClick={next}>
                                 <ChevronRight />
                             </Button>
                         </div>
                         <span className="text-lg font-medium">
-                            {weekStart.toLocaleDateString('nl-NL', {
-                                day: 'numeric',
-                                month: 'long',
-                            })}{' '}
-                            –{' '}
-                            {weekEnd.toLocaleDateString('nl-NL', {
-                                day: 'numeric',
-                                month: 'long',
-                                year: 'numeric',
-                            })}
+                            {view === 'week'
+                                ? `${weekStart.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' })} – ${weekEnd.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}`
+                                : weekStart.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' })}
                         </span>
+                    </div>
+                    <div className="flex items-center gap-1 rounded-lg bg-muted p-0.5">
+                        <button
+                            className={`rounded-md px-3 py-1 text-sm ${view === 'week' ? 'bg-white font-medium shadow-sm dark:bg-gray-800' : 'hover:bg-white/50'}`}
+                            onClick={() => setView('week')}
+                        >
+                            Week
+                        </button>
+                        <button
+                            className={`rounded-md px-3 py-1 text-sm ${view === 'month' ? 'bg-white font-medium shadow-sm dark:bg-gray-800' : 'hover:bg-white/50'}`}
+                            onClick={() => setView('month')}
+                        >
+                            Maand
+                        </button>
                     </div>
                 </div>
 
@@ -621,15 +643,25 @@ export default function ScheduleIndex({
                     </Card>
                 )}
 
-                <WeekView
-                    schedules={schedules}
-                    exceptions={exceptions}
-                    availabilitySlots={availabilitySlots}
-                    weekStart={weekStart}
-                    onDeleteSchedule={deleteSchedule}
-                    onDeleteException={deleteException}
-                    onDeleteAvailability={deleteAvailability}
-                />
+                {view === 'week' ? (
+                    <WeekView
+                        schedules={schedules}
+                        exceptions={exceptions}
+                        availabilitySlots={availabilitySlots}
+                        weekStart={weekStart}
+                        onDeleteSchedule={deleteSchedule}
+                        onDeleteException={deleteException}
+                        onDeleteAvailability={deleteAvailability}
+                    />
+                ) : (
+                    <MonthView
+                        schedules={schedules}
+                        exceptions={exceptions}
+                        availabilitySlots={availabilitySlots}
+                        monthStart={weekStart}
+                        onOpenWeek={jumpToWeek}
+                    />
+                )}
             </div>
         </>
     );

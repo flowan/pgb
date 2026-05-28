@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Maandweergave D - Heatmap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans">
+
+<div class="flex min-h-screen">
+    <aside class="w-60 border-r bg-white p-4 flex flex-col gap-6">
+        <div class="font-semibold text-lg">PGB Portaal</div>
+        <nav class="flex flex-col gap-1 text-sm">
+            <a href="#" class="px-3 py-2 rounded-md text-gray-600 hover:bg-gray-100">Dashboard</a>
+            <a href="#" class="px-3 py-2 rounded-md bg-gray-100 text-gray-900 font-medium">Cliënten</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-6">
+        <nav class="text-sm text-gray-500 mb-4">
+            Cliënten <span class="mx-1">›</span> Sophie de Vries <span class="mx-1">›</span> <span class="text-gray-900">Planning</span>
+        </nav>
+
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-semibold">Planning van Sophie de Vries</h1>
+            <div class="flex gap-2">
+                <button class="px-4 py-2 text-sm border rounded-md">+ Beschikbaarheid</button>
+                <button class="px-4 py-2 text-sm bg-gray-900 text-white rounded-md">+ Afspraak</button>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+                <button class="px-3 py-1.5 text-sm border rounded-md">Vandaag</button>
+                <div class="flex items-center gap-1">
+                    <button class="p-1.5 rounded hover:bg-gray-100">‹</button>
+                    <button class="p-1.5 rounded hover:bg-gray-100">›</button>
+                </div>
+                <h2 class="text-lg font-medium">Mei 2026</h2>
+            </div>
+            <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+                <button class="px-3 py-1 text-sm rounded-md hover:bg-white">Dag</button>
+                <button class="px-3 py-1 text-sm rounded-md hover:bg-white">Week</button>
+                <button class="px-3 py-1 text-sm rounded-md bg-white shadow-sm font-medium">Maand</button>
+            </div>
+        </div>
+
+        <!-- Legenda -->
+        <div class="flex items-center gap-2 mb-4 text-xs text-gray-600">
+            <span>Aantal uren:</span>
+            <div class="flex items-center gap-1">
+                <span class="h-4 w-4 rounded bg-blue-100"></span>
+                <span>1–3u</span>
+            </div>
+            <div class="flex items-center gap-1">
+                <span class="h-4 w-4 rounded bg-blue-300"></span>
+                <span>3–6u</span>
+            </div>
+            <div class="flex items-center gap-1">
+                <span class="h-4 w-4 rounded bg-blue-500"></span>
+                <span>6–9u</span>
+            </div>
+            <div class="flex items-center gap-1">
+                <span class="h-4 w-4 rounded bg-blue-700"></span>
+                <span>9u+</span>
+            </div>
+            <span class="ml-4">•</span>
+            <div class="flex items-center gap-1">
+                <span class="h-4 w-4 rounded border-2 border-dashed border-purple-400"></span>
+                <span>Beschikbaar slot</span>
+            </div>
+        </div>
+
+        <div class="bg-white border rounded-xl overflow-hidden shadow-sm">
+            <div class="grid grid-cols-7 border-b">
+                <div class="p-2 text-center text-xs font-medium text-gray-500 uppercase">Ma</div>
+                <div class="p-2 text-center text-xs font-medium text-gray-500 uppercase">Di</div>
+                <div class="p-2 text-center text-xs font-medium text-gray-500 uppercase">Wo</div>
+                <div class="p-2 text-center text-xs font-medium text-gray-500 uppercase">Do</div>
+                <div class="p-2 text-center text-xs font-medium text-gray-500 uppercase">Vr</div>
+                <div class="p-2 text-center text-xs font-medium text-gray-500 uppercase">Za</div>
+                <div class="p-2 text-center text-xs font-medium text-gray-500 uppercase">Zo</div>
+            </div>
+
+            <div class="grid grid-cols-7">
+                <!-- Week 1 -->
+                <div class="border-l border-t p-2 min-h-[80px] text-gray-300"><div class="text-sm">27</div></div>
+                <div class="border-l border-t p-2 min-h-[80px] text-gray-300"><div class="text-sm">28</div></div>
+                <div class="border-l border-t p-2 min-h-[80px] text-gray-300"><div class="text-sm">29</div></div>
+                <div class="border-l border-t p-2 min-h-[80px] text-gray-300"><div class="text-sm">30</div></div>
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-700 text-white">
+                    <div class="text-sm font-medium">1</div>
+                    <div class="text-xs mt-1 opacity-90">10u</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px]"><div class="text-sm text-gray-400">2</div></div>
+                <div class="border-l border-t p-2 min-h-[80px]"><div class="text-sm text-gray-400">3</div></div>
+
+                <!-- Week 2 -->
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-300">
+                    <div class="text-sm font-medium">4</div>
+                    <div class="text-xs mt-1 text-gray-700">3u</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-300">
+                    <div class="text-sm font-medium">5</div>
+                    <div class="text-xs mt-1 text-gray-700">4u</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-300">
+                    <div class="text-sm font-medium">6</div>
+                    <div class="text-xs mt-1 text-gray-700">3u</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px]"><div class="text-sm">7</div></div>
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-700 text-white">
+                    <div class="text-sm font-medium">8</div>
+                    <div class="text-xs mt-1 opacity-90">10u</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px]"><div class="text-sm text-gray-400">9</div></div>
+                <div class="border-l border-t p-2 min-h-[80px]"><div class="text-sm text-gray-400">10</div></div>
+
+                <!-- Week 3 -->
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-300">
+                    <div class="text-sm font-medium">11</div>
+                    <div class="text-xs mt-1 text-gray-700">3u</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-300">
+                    <div class="text-sm font-medium">12</div>
+                    <div class="text-xs mt-1 text-gray-700">4u</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-500 text-white border-2 border-dashed border-purple-400 relative">
+                    <div class="text-sm font-medium">13</div>
+                    <div class="text-xs mt-1 opacity-90">5u + slot</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px]"><div class="text-sm">14</div></div>
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-700 text-white">
+                    <div class="text-sm font-medium">15</div>
+                    <div class="text-xs mt-1 opacity-90">10u</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px]"><div class="text-sm text-gray-400">16</div></div>
+                <div class="border-l border-t p-2 min-h-[80px]"><div class="text-sm text-gray-400">17</div></div>
+
+                <!-- Week 4 -->
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-300">
+                    <div class="text-sm font-medium">18</div>
+                    <div class="text-xs mt-1 text-gray-700">3u</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-300">
+                    <div class="text-sm font-medium">19</div>
+                    <div class="text-xs mt-1 text-gray-700">4u</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-300">
+                    <div class="text-sm font-medium">20</div>
+                    <div class="text-xs mt-1 text-gray-700">3u</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px]"><div class="text-sm">21</div></div>
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-700 text-white">
+                    <div class="text-sm font-medium">22</div>
+                    <div class="text-xs mt-1 opacity-90">10u</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px]"><div class="text-sm text-gray-400">23</div></div>
+                <div class="border-l border-t p-2 min-h-[80px]"><div class="text-sm text-gray-400">24</div></div>
+
+                <!-- Week 5 -->
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-300">
+                    <div class="text-sm font-medium">25</div>
+                    <div class="text-xs mt-1 text-gray-700">3u</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-300">
+                    <div class="text-sm font-medium">26</div>
+                    <div class="text-xs mt-1 text-gray-700">4u</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-500 text-white">
+                    <div class="text-sm font-medium">27</div>
+                    <div class="text-xs mt-1 opacity-90">5u</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-50 ring-2 ring-blue-600 ring-inset">
+                    <div class="text-sm font-medium text-blue-600">28</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px] bg-blue-700 text-white border-2 border-dashed border-purple-400">
+                    <div class="text-sm font-medium">29</div>
+                    <div class="text-xs mt-1 opacity-90">10u + slot</div>
+                </div>
+                <div class="border-l border-t p-2 min-h-[80px]"><div class="text-sm text-gray-400">30</div></div>
+                <div class="border-l border-t p-2 min-h-[80px]"><div class="text-sm text-gray-400">31</div></div>
+            </div>
+        </div>
+
+        <p class="text-xs text-gray-500 mt-3">Snel zien wanneer Sophie veel zorg krijgt. Klik op een dag voor details.</p>
+    </main>
+</div>
+</body>
+</html>
