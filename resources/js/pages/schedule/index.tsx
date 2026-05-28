@@ -50,6 +50,7 @@ export default function ScheduleIndex({
 }) {
     const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
     const [view, setView] = useState<'week' | 'month'>('week');
+    const [showAvailability, setShowAvailability] = useState(true);
     const [showScheduleForm, setShowScheduleForm] = useState(false);
     const [showExceptionForm, setShowExceptionForm] = useState(false);
     const [showAvailabilityForm, setShowAvailabilityForm] = useState(false);
@@ -225,7 +226,15 @@ export default function ScheduleIndex({
                                 : weekStart.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' })}
                         </span>
                     </div>
-                    <div className="flex items-center gap-1 rounded-lg bg-muted p-0.5">
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setShowAvailability((v) => !v)}
+                            className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs ${showAvailability ? 'border-purple-300 bg-purple-50 text-purple-900' : 'border-gray-200 bg-white text-gray-400'}`}
+                        >
+                            <span className={`h-2.5 w-2.5 rounded-full border border-dashed ${showAvailability ? 'border-purple-400 bg-purple-300' : 'border-gray-300'}`} />
+                            Beschikbaarheid
+                        </button>
+                        <div className="flex items-center gap-1 rounded-lg bg-muted p-0.5">
                         <button
                             className={`rounded-md px-3 py-1 text-sm ${view === 'week' ? 'bg-white font-medium shadow-sm dark:bg-gray-800' : 'hover:bg-white/50'}`}
                             onClick={() => setView('week')}
@@ -238,6 +247,7 @@ export default function ScheduleIndex({
                         >
                             Maand
                         </button>
+                        </div>
                     </div>
                 </div>
 
@@ -647,7 +657,7 @@ export default function ScheduleIndex({
                     <WeekView
                         schedules={schedules}
                         exceptions={exceptions}
-                        availabilitySlots={availabilitySlots}
+                        availabilitySlots={showAvailability ? availabilitySlots : []}
                         weekStart={weekStart}
                         onDeleteSchedule={deleteSchedule}
                         onDeleteException={deleteException}
@@ -657,7 +667,7 @@ export default function ScheduleIndex({
                     <MonthView
                         schedules={schedules}
                         exceptions={exceptions}
-                        availabilitySlots={availabilitySlots}
+                        availabilitySlots={showAvailability ? availabilitySlots : []}
                         monthStart={weekStart}
                         onOpenWeek={jumpToWeek}
                     />
