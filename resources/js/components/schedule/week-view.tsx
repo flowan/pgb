@@ -40,11 +40,73 @@ interface EventBlock {
     actionLabel?: string;
 }
 
-function EventCard({ event }: { event: EventBlock }) {
+interface PositionedEvent extends EventBlock {
+    columnIndex: number;
+    columnsInGroup: number;
+}
+
+function positionEvents(events: EventBlock[]): PositionedEvent[] {
+    const sorted = [...events].sort(
+        (a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime),
+    );
+
+    // Group events that transitively overlap with each other
+    const groups: EventBlock[][] = [];
+    for (const event of sorted) {
+        const startMin = timeToMinutes(event.startTime);
+        const endMin = timeToMinutes(event.endTime);
+        const overlapping = groups.find((group) =>
+            group.some((e) => {
+                const eStart = timeToMinutes(e.startTime);
+                const eEnd = timeToMinutes(e.endTime);
+                return startMin < eEnd && endMin > eStart;
+            }),
+        );
+        if (overlapping) {
+            overlapping.push(event);
+        } else {
+            groups.push([event]);
+        }
+    }
+
+    // Within each group, assign columns greedily
+    const positioned: PositionedEvent[] = [];
+    for (const group of groups) {
+        const columns: EventBlock[][] = [];
+        const eventColumn = new Map<string, number>();
+        for (const event of group) {
+            const startMin = timeToMinutes(event.startTime);
+            let col = columns.findIndex((colEvents) => {
+                const last = colEvents[colEvents.length - 1];
+                return startMin >= timeToMinutes(last.endTime);
+            });
+            if (col === -1) {
+                col = columns.length;
+                columns.push([]);
+            }
+            columns[col].push(event);
+            eventColumn.set(event.id, col);
+        }
+        for (const event of group) {
+            positioned.push({
+                ...event,
+                columnIndex: eventColumn.get(event.id)!,
+                columnsInGroup: columns.length,
+            });
+        }
+    }
+
+    return positioned;
+}
+
+function EventCard({ event }: { event: PositionedEvent }) {
     const startMin = timeToMinutes(event.startTime);
     const endMin = timeToMinutes(event.endTime);
     const top = (startMin - START_HOUR * 60) * (HOUR_HEIGHT / 60);
     const height = Math.max((endMin - startMin) * (HOUR_HEIGHT / 60), 24);
+
+    const widthPercent = 100 / event.columnsInGroup;
+    const leftPercent = event.columnIndex * widthPercent;
 
     const styles = {
         regular: 'bg-blue-50 border-blue-200 text-blue-900 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-200',
@@ -64,8 +126,13 @@ function EventCard({ event }: { event: EventBlock }) {
 
     return (
         <div
-            className={`group absolute left-1 right-1 overflow-hidden rounded-md border px-2 py-1 text-xs ${styles[event.variant]}`}
-            style={{ top: `${top}px`, height: `${height}px` }}
+            className={`group absolute overflow-hidden rounded-md border px-2 py-1 text-xs ${styles[event.variant]}`}
+            style={{
+                top: `${top}px`,
+                height: `${height}px`,
+                left: `calc(${leftPercent}% + 2px)`,
+                width: `calc(${widthPercent}% - 4px)`,
+            }}
         >
             <div className="flex items-start justify-between">
                 <div className="min-w-0 flex-1">
@@ -301,7 +368,7 @@ export function WeekView({
                                 ))}
 
                                 {/* Events */}
-                                {events.map((event) => (
+                                {positionEvents(events).map((event) => (
                                     <EventCard key={event.id} event={event} />
                                 ))}
 
