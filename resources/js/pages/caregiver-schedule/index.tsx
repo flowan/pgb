@@ -60,6 +60,7 @@ export default function CaregiverScheduleIndex({
     const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
     const [view, setView] = useState<'week' | 'month'>('week');
     const [showAvailability, setShowAvailability] = useState(true);
+    const [showColleagues, setShowColleagues] = useState(true);
     const [dialog, setDialog] = useState<DialogState | null>(null);
 
     function claimSlot(slotId: number) {
@@ -100,8 +101,12 @@ export default function CaregiverScheduleIndex({
 
     // Pass the raw data through — we now want to see the real caregiver name
     // so colleagues' shifts are distinguishable from your own.
-    const allSchedules: Schedule[] = clients.flatMap((c) => c.schedules ?? []);
-    const allExceptions: ScheduleException[] = clients.flatMap((c) => c.schedule_exceptions ?? []);
+    const allSchedules: Schedule[] = clients
+        .flatMap((c) => c.schedules ?? [])
+        .filter((s) => showColleagues || myCaregiverIds.includes(s.caregiver_id));
+    const allExceptions: ScheduleException[] = clients
+        .flatMap((c) => c.schedule_exceptions ?? [])
+        .filter((ex) => showColleagues || myCaregiverIds.includes(ex.caregiver_id));
     const allAvailabilitySlots: AvailabilitySlot[] = clients.flatMap((client) =>
         (client.availability_slots ?? []).map((slot) => ({
             ...slot,
@@ -148,6 +153,13 @@ export default function CaregiverScheduleIndex({
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setShowColleagues((v) => !v)}
+                            className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs ${showColleagues ? 'border-gray-300 bg-gray-50 text-gray-700' : 'border-gray-200 bg-white text-gray-400'}`}
+                        >
+                            <span className={`h-2.5 w-2.5 rounded-full ${showColleagues ? 'bg-gray-400' : 'border border-gray-300'}`} />
+                            Collega's
+                        </button>
                         <button
                             onClick={() => setShowAvailability((v) => !v)}
                             className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs ${showAvailability ? 'border-purple-300 bg-purple-50 text-purple-900' : 'border-gray-200 bg-white text-gray-400'}`}
