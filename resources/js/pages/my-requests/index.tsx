@@ -13,6 +13,7 @@ import type {
     ScheduleException,
     ShiftSwapRequest,
     ShiftTakeoverOffer,
+    ShiftTakeoverRequest,
 } from '@/types';
 
 type ScheduleWithClient = Schedule & { client?: Client };
@@ -34,12 +35,19 @@ type OpenSwapWithRelations = OpenSwapRequest & {
     offers?: (OpenSwapOffer & { offered_by?: Caregiver })[];
 };
 
+type TakeoverRequestWithRelations = ShiftTakeoverRequest & {
+    target_schedule?: ScheduleWithClient | null;
+    target_schedule_exception?: ExceptionWithClient | null;
+};
+
 interface Props {
     myTakeoverOffers: TakeoverWithRelations[];
     myDirectSwapsOut: SwapWithRelations[];
     directSwapsIn: SwapWithRelations[];
     myOpenSwaps: OpenSwapWithRelations[];
     openSwapsToBidOn: OpenSwapWithRelations[];
+    myTakeoverRequestsOut: TakeoverRequestWithRelations[];
+    takeoverRequestsIn: TakeoverRequestWithRelations[];
 }
 
 type Tab = 'aanbiedingen' | 'ruilverzoeken' | 'aanmij' | 'biedingen';
@@ -73,6 +81,8 @@ export default function MyRequestsIndex({
     directSwapsIn,
     myOpenSwaps,
     openSwapsToBidOn,
+    myTakeoverRequestsOut,
+    takeoverRequestsIn,
 }: Props) {
     const [tab, setTab] = useState<Tab>('aanbiedingen');
     const [respondTo, setRespondTo] = useState<SwapWithRelations | null>(null);
@@ -100,11 +110,20 @@ export default function MyRequestsIndex({
     function withdrawOpenSwap(id: number) {
         router.delete(`/open-swap-requests/${id}`, { preserveScroll: true });
     }
+    function withdrawTakeoverRequest(id: number) {
+        router.delete(`/shift-takeover-requests/${id}`, { preserveScroll: true });
+    }
+    function acceptTakeoverRequest(id: number) {
+        router.post(`/shift-takeover-requests/${id}/accept`, {}, { preserveScroll: true });
+    }
+    function declineTakeoverRequest(id: number) {
+        router.post(`/shift-takeover-requests/${id}/decline`, {}, { preserveScroll: true });
+    }
 
     const tabs: { id: Tab; label: string; count: number }[] = [
         { id: 'aanbiedingen', label: 'Mijn aanbiedingen', count: myTakeoverOffers.length + myOpenSwaps.length },
-        { id: 'ruilverzoeken', label: 'Mijn ruilverzoeken', count: myDirectSwapsOut.length },
-        { id: 'aanmij', label: 'Verzoeken aan mij', count: directSwapsIn.length },
+        { id: 'ruilverzoeken', label: 'Mijn ruilverzoeken', count: myDirectSwapsOut.length + myTakeoverRequestsOut.length },
+        { id: 'aanmij', label: 'Verzoeken aan mij', count: directSwapsIn.length + takeoverRequestsIn.length },
         { id: 'biedingen', label: 'Aanbiedingen die ik kan doen', count: openSwapsToBidOn.length },
     ];
 
@@ -239,59 +258,143 @@ export default function MyRequestsIndex({
                 )}
 
                 {tab === 'ruilverzoeken' && (
-                    <div className="space-y-2">
-                        {myDirectSwapsOut.length === 0 ? (
-                            <EmptyState text="Je hebt geen directe ruilverzoeken verstuurd." />
-                        ) : (
-                            myDirectSwapsOut.map((s) => (
-                                <Card key={s.id} className="p-3">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div className="text-sm">
-                                            <div className="font-medium">
-                                                Met {s.target?.name ?? 'collega'}
-                                            </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                Jouw {String(s.requester_date)} ↔ Hun {String(s.target_date)} • Status: {String(s.status)}
-                                                {s.decline_reason && (
-                                                    <> • Reden: {s.decline_reason}</>
+                    <div className="space-y-4">
+                        <section>
+                            <h2 className="mb-2 text-sm font-medium uppercase text-muted-foreground">
+                                Directe ruilverzoeken
+                            </h2>
+                            {myDirectSwapsOut.length === 0 ? (
+                                <EmptyState text="Je hebt geen directe ruilverzoeken verstuurd." />
+                            ) : (
+                                <div className="space-y-2">
+                                    {myDirectSwapsOut.map((s) => (
+                                        <Card key={s.id} className="p-3">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="text-sm">
+                                                    <div className="font-medium">
+                                                        Met {s.target?.name ?? 'collega'}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        Jouw {String(s.requester_date)} ↔ Hun {String(s.target_date)} • Status: {String(s.status)}
+                                                        {s.decline_reason && (
+                                                            <> • Reden: {s.decline_reason}</>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {s.status === 'pending' && (
+                                                    <Button variant="outline" size="sm" onClick={() => withdrawDirectSwap(s.id)}>
+                                                        Intrekken
+                                                    </Button>
                                                 )}
                                             </div>
-                                        </div>
-                                        {s.status === 'pending' && (
-                                            <Button variant="outline" size="sm" onClick={() => withdrawDirectSwap(s.id)}>
-                                                Intrekken
-                                            </Button>
-                                        )}
-                                    </div>
-                                </Card>
-                            ))
-                        )}
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
+                        <section>
+                            <h2 className="mb-2 text-sm font-medium uppercase text-muted-foreground">
+                                Overname-verzoeken
+                            </h2>
+                            {myTakeoverRequestsOut.length === 0 ? (
+                                <EmptyState text="Je hebt geen overname-verzoeken verstuurd." />
+                            ) : (
+                                <div className="space-y-2">
+                                    {myTakeoverRequestsOut.map((r) => (
+                                        <Card key={r.id} className="p-3">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="text-sm">
+                                                    <div className="font-medium">
+                                                        Vraag aan {r.target?.name ?? 'collega'}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        <ClientLabel schedule={r.target_schedule} exception={r.target_schedule_exception} />
+                                                        {' • '}
+                                                        {String(r.target_date)} • Status: {String(r.status)}
+                                                        {r.decline_reason && (
+                                                            <> • Reden: {r.decline_reason}</>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {r.status === 'pending' && (
+                                                    <Button variant="outline" size="sm" onClick={() => withdrawTakeoverRequest(r.id)}>
+                                                        Intrekken
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
                     </div>
                 )}
 
                 {tab === 'aanmij' && (
-                    <div className="space-y-2">
-                        {directSwapsIn.length === 0 ? (
-                            <EmptyState text="Geen openstaande verzoeken aan jou." />
-                        ) : (
-                            directSwapsIn.map((s) => (
-                                <Card key={s.id} className="p-3">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div className="text-sm">
-                                            <div className="font-medium">
-                                                Van {s.requester?.name ?? 'collega'}
+                    <div className="space-y-4">
+                        <section>
+                            <h2 className="mb-2 text-sm font-medium uppercase text-muted-foreground">
+                                Directe ruilverzoeken
+                            </h2>
+                            {directSwapsIn.length === 0 ? (
+                                <EmptyState text="Geen openstaande ruilverzoeken aan jou." />
+                            ) : (
+                                <div className="space-y-2">
+                                    {directSwapsIn.map((s) => (
+                                        <Card key={s.id} className="p-3">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="text-sm">
+                                                    <div className="font-medium">
+                                                        Van {s.requester?.name ?? 'collega'}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        Hun {String(s.requester_date)} ↔ Jouw {String(s.target_date)}
+                                                    </div>
+                                                </div>
+                                                <Button size="sm" onClick={() => setRespondTo(s)}>
+                                                    Reageren
+                                                </Button>
                                             </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                Hun {String(s.requester_date)} ↔ Jouw {String(s.target_date)}
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
+                        <section>
+                            <h2 className="mb-2 text-sm font-medium uppercase text-muted-foreground">
+                                Overname-verzoeken
+                            </h2>
+                            {takeoverRequestsIn.length === 0 ? (
+                                <EmptyState text="Geen openstaande overname-verzoeken aan jou." />
+                            ) : (
+                                <div className="space-y-2">
+                                    {takeoverRequestsIn.map((r) => (
+                                        <Card key={r.id} className="p-3">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="text-sm">
+                                                    <div className="font-medium">
+                                                        {r.requester?.name ?? 'Collega'} wil je shift overnemen
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        <ClientLabel schedule={r.target_schedule} exception={r.target_schedule_exception} />
+                                                        {' • '}
+                                                        {String(r.target_date)}
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <Button size="sm" onClick={() => acceptTakeoverRequest(r.id)}>
+                                                        Accepteren
+                                                    </Button>
+                                                    <Button variant="outline" size="sm" onClick={() => declineTakeoverRequest(r.id)}>
+                                                        Afwijzen
+                                                    </Button>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <Button size="sm" onClick={() => setRespondTo(s)}>
-                                            Reageren
-                                        </Button>
-                                    </div>
-                                </Card>
-                            ))
-                        )}
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
                     </div>
                 )}
 

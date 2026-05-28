@@ -6,6 +6,7 @@ use App\Models\Caregiver;
 use App\Models\OpenSwapRequest;
 use App\Models\ShiftSwapRequest;
 use App\Models\ShiftTakeoverOffer;
+use App\Models\ShiftTakeoverRequest;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -34,6 +35,13 @@ class MyRequestsController extends Controller
                 ->where('status', 'open')
                 ->whereNotIn('requester_caregiver_id', $caregiverIds)
                 ->with(['requester', 'schedule.client', 'scheduleException.client'])
+                ->latest()->get(),
+            'myTakeoverRequestsOut' => ShiftTakeoverRequest::whereIn('requester_caregiver_id', $caregiverIds)
+                ->with(['requester', 'target', 'targetSchedule.client', 'targetScheduleException.client'])
+                ->latest()->get(),
+            'takeoverRequestsIn' => ShiftTakeoverRequest::whereIn('target_caregiver_id', $caregiverIds)
+                ->where('status', 'pending')
+                ->with(['requester', 'targetSchedule.client', 'targetScheduleException.client'])
                 ->latest()->get(),
         ]);
     }

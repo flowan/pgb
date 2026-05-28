@@ -108,6 +108,21 @@ export interface ShiftSwapRequest {
     target?: Caregiver;
 }
 
+export interface ShiftTakeoverRequest {
+    id: number;
+    requester_caregiver_id: number;
+    target_caregiver_id: number;
+    target_schedule_id: number | null;
+    target_schedule_exception_id: number | null;
+    target_date: string;
+    status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired';
+    responded_at: string | null;
+    decline_reason: string | null;
+    message: string | null;
+    requester?: Caregiver;
+    target?: Caregiver;
+}
+
 export interface OpenSwapRequest {
     id: number;
     schedule_id: number | null;
