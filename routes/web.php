@@ -8,8 +8,14 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AvailabilityClaimController;
 use App\Http\Controllers\AvailabilitySlotController;
+use App\Http\Controllers\OpenSwapOfferController;
+use App\Http\Controllers\OpenSwapRequestController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\ScheduleExceptionController;
+use App\Http\Controllers\ShiftSwapRequestController;
+use App\Http\Controllers\ShiftSwapResponseController;
+use App\Http\Controllers\ShiftTakeoverClaimController;
+use App\Http\Controllers\ShiftTakeoverOfferController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
@@ -25,6 +31,23 @@ Route::get('/my-schedule', CaregiverScheduleController::class)
 Route::post('/availability-slots/{availabilitySlot}/claim', [AvailabilityClaimController::class, 'store'])
     ->middleware(['auth', 'verified', 'role:caregiver'])
     ->name('availability-slots.claim');
+
+Route::middleware(['auth', 'verified', 'role:caregiver'])->group(function () {
+    Route::post('/shift-takeover-offers', [ShiftTakeoverOfferController::class, 'store'])->name('shift-takeover-offers.store');
+    Route::delete('/shift-takeover-offers/{shiftTakeoverOffer}', [ShiftTakeoverOfferController::class, 'destroy'])->name('shift-takeover-offers.destroy');
+    Route::post('/shift-takeover-offers/{shiftTakeoverOffer}/claim', [ShiftTakeoverClaimController::class, 'store'])->name('shift-takeover-offers.claim');
+
+    Route::post('/shift-swap-requests', [ShiftSwapRequestController::class, 'store'])->name('shift-swap-requests.store');
+    Route::delete('/shift-swap-requests/{shiftSwapRequest}', [ShiftSwapRequestController::class, 'destroy'])->name('shift-swap-requests.destroy');
+    Route::post('/shift-swap-requests/{shiftSwapRequest}/accept', [ShiftSwapResponseController::class, 'accept'])->name('shift-swap-requests.accept');
+    Route::post('/shift-swap-requests/{shiftSwapRequest}/decline', [ShiftSwapResponseController::class, 'decline'])->name('shift-swap-requests.decline');
+
+    Route::post('/open-swap-requests', [OpenSwapRequestController::class, 'store'])->name('open-swap-requests.store');
+    Route::delete('/open-swap-requests/{openSwapRequest}', [OpenSwapRequestController::class, 'destroy'])->name('open-swap-requests.destroy');
+    Route::post('/open-swap-requests/{openSwapRequest}/offers', [OpenSwapOfferController::class, 'store'])->name('open-swap-requests.offers.store');
+    Route::post('/open-swap-requests/{openSwapRequest}/offers/{offer}/accept', [OpenSwapRequestController::class, 'acceptOffer'])->name('open-swap-requests.offers.accept');
+    Route::delete('/open-swap-offers/{offer}', [OpenSwapOfferController::class, 'destroy'])->name('open-swap-offers.destroy');
+});
 
 Route::middleware(['auth', 'verified', 'role:budget_holder'])->group(function () {
     Route::resource('clients', ClientController::class);
