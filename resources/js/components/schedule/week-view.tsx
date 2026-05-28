@@ -303,37 +303,36 @@ export function WeekView({
 
     return (
         <div className="overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-gray-950">
-            {/* Day headers */}
-            <div className="grid grid-cols-[64px_repeat(7,1fr)] border-b">
-                <div />
-                {days.map((date, i) => {
-                    const today = isToday(date);
-                    return (
-                        <div
-                            key={i}
-                            className={`border-l p-2 text-center ${today ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''}`}
-                        >
-                            <div className={`text-xs uppercase ${today ? 'font-medium text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`}>
-                                {dayNamesShort[i]}
-                            </div>
+            {/* Time grid (headers sticky inside for alignment with content) */}
+            <div className="max-h-[660px] overflow-y-auto">
+                <div className="grid grid-cols-[64px_repeat(7,1fr)]">
+                    {/* Day headers */}
+                    <div className="sticky top-0 z-10 bg-white dark:bg-gray-950" />
+                    {days.map((date, i) => {
+                        const today = isToday(date);
+                        return (
                             <div
-                                className={`mx-auto mt-0.5 text-sm font-medium ${
-                                    today
-                                        ? 'flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white'
-                                        : i >= 5
-                                          ? 'text-muted-foreground'
-                                          : ''
-                                }`}
+                                key={`h-${i}`}
+                                className={`sticky top-0 z-10 border-b border-l p-2 text-center ${today ? 'bg-blue-50/50 dark:bg-blue-950/20' : 'bg-white dark:bg-gray-950'}`}
                             >
-                                {date.getDate()}
+                                <div className={`text-xs uppercase ${today ? 'font-medium text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`}>
+                                    {dayNamesShort[i]}
+                                </div>
+                                <div
+                                    className={`mx-auto mt-0.5 text-sm font-medium ${
+                                        today
+                                            ? 'flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white'
+                                            : i >= 5
+                                              ? 'text-muted-foreground'
+                                              : ''
+                                    }`}
+                                >
+                                    {date.getDate()}
+                                </div>
                             </div>
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Time grid */}
-            <div className="max-h-[600px] overflow-y-auto">
+                        );
+                    })}
+                </div>
                 <div className="relative grid grid-cols-[64px_repeat(7,1fr)]">
                     {/* Time labels */}
                     <div>
