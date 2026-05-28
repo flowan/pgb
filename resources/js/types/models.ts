@@ -59,6 +59,7 @@ export interface ScheduleException {
     end_time: string;
     type: 'cancelled' | 'modified' | 'added';
     notes: string | null;
+    due_to_sickness: boolean;
     caregiver?: Caregiver;
 }
 

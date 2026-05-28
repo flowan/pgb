@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowRightLeft, HandHelping, Megaphone } from 'lucide-react';
+import { ArrowRightLeft, HandHelping, Megaphone, Thermometer } from 'lucide-react';
 
 interface Props {
     open: boolean;
@@ -11,6 +11,7 @@ interface Props {
     onTakeover: () => void;
     onDirectSwap: () => void;
     onOpenSwap: () => void;
+    onReportSick: () => void;
 }
 
 export function ShiftActionMenu({
@@ -23,6 +24,7 @@ export function ShiftActionMenu({
     onTakeover,
     onDirectSwap,
     onOpenSwap,
+    onReportSick,
 }: Props) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -72,6 +74,20 @@ export function ShiftActionMenu({
                                 <div className="font-medium">Open ruilverzoek plaatsen</div>
                                 <div className="text-xs text-muted-foreground">
                                     Vraag collega's om een ruilaanbod te doen. Jij kiest welke.
+                                </div>
+                            </div>
+                        </div>
+                    </button>
+                    <button
+                        onClick={onReportSick}
+                        className="w-full rounded-md border p-3 text-left text-sm hover:bg-gray-50"
+                    >
+                        <div className="flex items-start gap-2">
+                            <Thermometer className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+                            <div>
+                                <div className="font-medium">Ziek melden</div>
+                                <div className="text-xs text-muted-foreground">
+                                    Cancel deze shift en bied hem automatisch aan voor overname.
                                 </div>
                             </div>
                         </div>

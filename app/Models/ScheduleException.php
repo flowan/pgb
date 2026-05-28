@@ -26,6 +26,7 @@ class ScheduleException extends Model
         'end_time',
         'type',
         'notes',
+        'due_to_sickness',
     ];
 
     protected function casts(): array
@@ -33,6 +34,7 @@ class ScheduleException extends Model
         return [
             'date' => 'date',
             'type' => ScheduleExceptionType::class,
+            'due_to_sickness' => 'boolean',
         ];
     }
 

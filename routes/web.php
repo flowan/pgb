@@ -63,6 +63,8 @@ Route::middleware(['auth', 'verified', 'role:caregiver'])->group(function () {
     Route::post('/shift-takeover-requests/{shiftTakeoverRequest}/accept', [ShiftTakeoverRequestResponseController::class, 'accept'])->name('shift-takeover-requests.accept');
     Route::post('/shift-takeover-requests/{shiftTakeoverRequest}/decline', [ShiftTakeoverRequestResponseController::class, 'decline'])->name('shift-takeover-requests.decline');
 
+    Route::post('/sick-reports', [\App\Http\Controllers\SickReportController::class, 'store'])->name('sick-reports.store');
+
     Route::post('/open-swap-requests', [OpenSwapRequestController::class, 'store'])->name('open-swap-requests.store');
     Route::delete('/open-swap-requests/{openSwapRequest}', [OpenSwapRequestController::class, 'destroy'])->name('open-swap-requests.destroy');
     Route::post('/open-swap-requests/{openSwapRequest}/offers', [OpenSwapOfferController::class, 'store'])->name('open-swap-requests.offers.store');

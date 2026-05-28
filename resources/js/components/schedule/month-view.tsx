@@ -48,6 +48,13 @@ function formatTime(time: string): string {
     return time.substring(0, 5);
 }
 
+function toLocalDateStr(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
 function formatTimeShort(time: string): string {
     // 09:00:00 → 09
     return time.substring(0, 2);
@@ -117,7 +124,7 @@ export function MonthView({
     const today = new Date();
 
     function getEventsForDay(date: Date, dayIndex: number): DayEvent[] {
-        const dateStr = date.toISOString().split('T')[0];
+        const dateStr = toLocalDateStr(date);
         const dayExceptions = exceptions.filter((ex) => ex.date === dateStr);
 
         const cancelledOrModifiedIds = new Set(
@@ -151,7 +158,9 @@ export function MonthView({
             const variant: DayEvent['variant'] =
                 ex.type === 'cancelled' ? 'cancelled' : isMine ? baseVariant : 'other';
             const sublabel =
-                ex.type === 'cancelled' ? 'Geannuleerd' : ex.type === 'modified' ? 'Gewijzigd' : 'Extra';
+                ex.type === 'cancelled'
+                    ? (ex.due_to_sickness ? 'Ziek gemeld' : 'Geannuleerd')
+                    : ex.type === 'modified' ? 'Gewijzigd' : 'Extra';
             events.push({
                 id: `e-${ex.id}`,
                 label: ex.caregiver?.name ?? 'Onbekend',
@@ -209,7 +218,7 @@ export function MonthView({
                     const events = getEventsForDay(date, dayIndex);
                     const visible = events.slice(0, 2);
                     const overflow = events.length - visible.length;
-                    const dayKey = date.toISOString().split('T')[0];
+                    const dayKey = toLocalDateStr(date);
                     const isOpen = openDay === dayKey;
                     const weekIndex = Math.floor(i / 7);
                     const isLastTwoRows = weekIndex >= weeksCount - 2;

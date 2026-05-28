@@ -72,7 +72,7 @@ function buildColleagueOccurrences(
             const cursor = new Date(today);
             while (cursor <= end) {
                 if (ownDayOfWeek(cursor) === s.day_of_week) {
-                    const dateStr = cursor.toISOString().split('T')[0];
+                    const dateStr = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
                     if (!skip.has(`${s.id}:${dateStr}`)) {
                         out.push({
                             kind: 'schedule',

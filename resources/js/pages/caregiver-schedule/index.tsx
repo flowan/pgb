@@ -12,6 +12,8 @@ import { AvailabilityClaimDialog } from '@/components/schedule/availability-clai
 import { RequestSwapDialog } from '@/components/schedule/request-swap-dialog';
 import { RequestTakeoverDialog } from '@/components/schedule/request-takeover-dialog';
 import { ColleagueShiftMenu } from '@/components/schedule/colleague-shift-menu';
+import { SickReportDialog } from '@/components/schedule/sick-report-dialog';
+import { Thermometer } from 'lucide-react';
 import type { AvailabilitySlot, Caregiver, Client, Schedule, ScheduleException } from '@/types';
 
 interface ClientWithSchedule extends Client {
@@ -40,7 +42,10 @@ export interface ShiftOccurrence {
 const DAY_LABELS = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
 
 function toDateStr(d: Date): string {
-    return d.toISOString().split('T')[0];
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
 }
 
 function ownDayOfWeek(d: Date): number {
@@ -157,6 +162,11 @@ export default function CaregiverScheduleIndex({
     const [colleagueMenu, setColleagueMenu] = useState<ColleagueShiftRef | null>(null);
     const [requestSwap, setRequestSwap] = useState<ColleagueShiftRef | null>(null);
     const [requestTakeover, setRequestTakeover] = useState<ColleagueShiftRef | null>(null);
+    const [sickDialog, setSickDialog] = useState(false);
+
+    function reportSickSingle(kind: 'schedule' | 'exception', id: number, date: string) {
+        router.post('/sick-reports', { scope: 'single', kind, id, date }, { preserveScroll: true });
+    }
 
     function claimSlot(slot: AvailabilitySlot, date: string) {
         setClaimDialog({ slot, date });
@@ -302,19 +312,29 @@ export default function CaregiverScheduleIndex({
             <div className="flex flex-col gap-6 p-4">
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-semibold">Mijn rooster</h1>
-                    <div className="flex items-center gap-1 rounded-lg bg-muted p-0.5">
-                        <button
-                            className={`rounded-md px-3 py-1 text-sm ${perspective === 'mine' ? 'bg-white font-medium shadow-sm dark:bg-gray-800' : 'hover:bg-white/50'}`}
-                            onClick={() => setPerspective('mine')}
+                    <div className="flex items-center gap-3">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSickDialog(true)}
                         >
-                            Mijn agenda
-                        </button>
-                        <button
-                            className={`rounded-md px-3 py-1 text-sm ${perspective === 'per-client' ? 'bg-white font-medium shadow-sm dark:bg-gray-800' : 'hover:bg-white/50'}`}
-                            onClick={() => setPerspective('per-client')}
-                        >
-                            Per cliënt
-                        </button>
+                            <Thermometer className="h-4 w-4" />
+                            Ziek melden
+                        </Button>
+                        <div className="flex items-center gap-1 rounded-lg bg-muted p-0.5">
+                            <button
+                                className={`rounded-md px-3 py-1 text-sm ${perspective === 'mine' ? 'bg-white font-medium shadow-sm dark:bg-gray-800' : 'hover:bg-white/50'}`}
+                                onClick={() => setPerspective('mine')}
+                            >
+                                Mijn agenda
+                            </button>
+                            <button
+                                className={`rounded-md px-3 py-1 text-sm ${perspective === 'per-client' ? 'bg-white font-medium shadow-sm dark:bg-gray-800' : 'hover:bg-white/50'}`}
+                                onClick={() => setPerspective('per-client')}
+                            >
+                                Per cliënt
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -440,6 +460,10 @@ export default function CaregiverScheduleIndex({
                         onTakeover={() => setDialog({ ...dialog, action: 'takeover' })}
                         onDirectSwap={() => setDialog({ ...dialog, action: 'directswap' })}
                         onOpenSwap={() => setDialog({ ...dialog, action: 'openswap' })}
+                        onReportSick={() => {
+                            reportSickSingle(dialog.kind, dialog.id, dialog.date);
+                            setDialog(null);
+                        }}
                     />
                 );
             })()}
@@ -536,6 +560,8 @@ export default function CaregiverScheduleIndex({
                     targetEndTime={requestTakeover.endTime}
                 />
             )}
+
+            <SickReportDialog open={sickDialog} onOpenChange={setSickDialog} />
         </>
     );
 }

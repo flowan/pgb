@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ScheduleExceptionType;
 use App\Enums\ShiftTakeoverOfferStatus;
 use App\Models\Caregiver;
+use App\Models\ScheduleException;
 use App\Models\ShiftTakeoverOffer;
 use App\Services\ShiftReassignmentService;
 use Illuminate\Http\RedirectResponse;
@@ -44,6 +46,16 @@ class ShiftTakeoverClaimController extends Controller
             $shiftTakeoverOffer->date->toDateString(),
             $claimer->id,
         );
+
+        // If the offer was created from a sick-cancellation, remove that cancellation
+        // so the slot doesn't show as both cancelled-sick AND covered by the claimer.
+        if ($shiftTakeoverOffer->schedule_id) {
+            ScheduleException::where('schedule_id', $shiftTakeoverOffer->schedule_id)
+                ->whereDate('date', $shiftTakeoverOffer->date->toDateString())
+                ->where('type', ScheduleExceptionType::Cancelled)
+                ->where('due_to_sickness', true)
+                ->delete();
+        }
 
         $shiftTakeoverOffer->update([
             'status' => ShiftTakeoverOfferStatus::Claimed,

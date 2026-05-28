@@ -8,6 +8,13 @@ const START_HOUR = 7;
 const END_HOUR = 20;
 const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
 
+function toLocalDateStr(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
 interface WeekViewProps {
     schedules: Schedule[];
     exceptions: ScheduleException[];
@@ -225,7 +232,7 @@ export function WeekView({
     });
 
     function getEventsForDay(dayIndex: number, date: Date): EventBlock[] {
-        const dateStr = date.toISOString().split('T')[0];
+        const dateStr = toLocalDateStr(date);
         const dayExceptions = exceptions.filter((ex) => ex.date === dateStr);
 
         const cancelledOrModifiedIds = new Set(
@@ -259,7 +266,7 @@ export function WeekView({
                 events.push({
                     id: `c-${ex.id}`,
                     label: ex.caregiver?.name ?? 'Onbekend',
-                    sublabel: 'Geannuleerd',
+                    sublabel: ex.due_to_sickness ? 'Ziek gemeld' : 'Geannuleerd',
                     startTime: ex.start_time,
                     endTime: ex.end_time,
                     variant: 'cancelled',
