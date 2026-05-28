@@ -2,9 +2,8 @@ import { Head, router } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WeekView } from '@/components/schedule/week-view';
-import type { AvailabilitySlot, Client, Schedule, ScheduleException } from '@/types';
+import type { AvailabilitySlot, Caregiver, Client, Schedule, ScheduleException } from '@/types';
 
 interface ClientWithSchedule extends Client {
     schedules: Schedule[];
@@ -51,6 +50,29 @@ export default function CaregiverScheduleIndex({
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
 
+    // Merge all clients' data into single arrays, replacing the caregiver name
+    // with the client name so the user sees which client each appointment is for.
+    const allSchedules: Schedule[] = clients.flatMap((client) =>
+        (client.schedules ?? []).map((s) => ({
+            ...s,
+            caregiver: { ...(s.caregiver as Caregiver), name: client.name },
+        })),
+    );
+
+    const allExceptions: ScheduleException[] = clients.flatMap((client) =>
+        (client.schedule_exceptions ?? []).map((ex) => ({
+            ...ex,
+            caregiver: { ...(ex.caregiver as Caregiver), name: client.name },
+        })),
+    );
+
+    const allAvailabilitySlots: AvailabilitySlot[] = clients.flatMap((client) =>
+        (client.availability_slots ?? []).map((slot) => ({
+            ...slot,
+            notes: client.name + (slot.notes ? ` — ${slot.notes}` : ''),
+        })),
+    );
+
     return (
         <>
             <Head title="Mijn rooster" />
@@ -91,25 +113,16 @@ export default function CaregiverScheduleIndex({
 
                 {clients.length === 0 ? (
                     <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">
-                        Je bent nog niet gekoppeld aan een client.
+                        Je bent nog niet gekoppeld aan een cliënt.
                     </div>
                 ) : (
-                    clients.map((client) => (
-                        <Card key={client.id}>
-                            <CardHeader>
-                                <CardTitle className="text-base">{client.name}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <WeekView
-                                    schedules={client.schedules ?? []}
-                                    exceptions={client.schedule_exceptions ?? []}
-                                    availabilitySlots={client.availability_slots ?? []}
-                                    weekStart={weekStart}
-                                    onClaimAvailability={claimSlot}
-                                />
-                            </CardContent>
-                        </Card>
-                    ))
+                    <WeekView
+                        schedules={allSchedules}
+                        exceptions={allExceptions}
+                        availabilitySlots={allAvailabilitySlots}
+                        weekStart={weekStart}
+                        onClaimAvailability={claimSlot}
+                    />
                 )}
             </div>
         </>
@@ -117,7 +130,5 @@ export default function CaregiverScheduleIndex({
 }
 
 CaregiverScheduleIndex.layout = {
-    breadcrumbs: [
-        { title: 'Mijn rooster', href: '/my-schedule' },
-    ],
+    breadcrumbs: [{ title: 'Mijn rooster', href: '/my-schedule' }],
 };
