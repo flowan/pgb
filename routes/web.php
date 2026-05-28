@@ -6,6 +6,7 @@ use App\Http\Controllers\CaregiverController;
 use App\Http\Controllers\CaregiverScheduleController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MyRequestsController;
 use App\Http\Controllers\AvailabilityClaimController;
 use App\Http\Controllers\AvailabilitySlotController;
 use App\Http\Controllers\NotificationController;
@@ -40,6 +41,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified', 'role:caregiver'])->group(function () {
+    Route::get('/my-requests', [MyRequestsController::class, 'index'])->name('my-requests.index');
+
     Route::post('/shift-takeover-offers', [ShiftTakeoverOfferController::class, 'store'])->name('shift-takeover-offers.store');
     Route::delete('/shift-takeover-offers/{shiftTakeoverOffer}', [ShiftTakeoverOfferController::class, 'destroy'])->name('shift-takeover-offers.destroy');
     Route::post('/shift-takeover-offers/{shiftTakeoverOffer}/claim', [ShiftTakeoverClaimController::class, 'store'])->name('shift-takeover-offers.claim');
