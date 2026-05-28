@@ -27,22 +27,95 @@ type DialogState =
     | { action: 'directswap'; kind: 'schedule' | 'exception'; id: number; date: string }
     | { action: 'openswap'; kind: 'schedule' | 'exception'; id: number; date: string };
 
-function collectColleagues(
+export interface ShiftOccurrence {
+    kind: 'schedule' | 'exception';
+    id: number;
+    date: string; // YYYY-MM-DD
+    startTime: string;
+    endTime: string;
+    clientName: string;
+    dayLabel: string;
+}
+
+const DAY_LABELS = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
+
+function toDateStr(d: Date): string {
+    return d.toISOString().split('T')[0];
+}
+
+function ownDayOfWeek(d: Date): number {
+    const js = d.getDay();
+    return js === 0 ? 6 : js - 1;
+}
+
+function collectMyOccurrences(
     clients: ClientWithSchedule[],
     myIds: number[],
-): (Caregiver & { schedules?: Schedule[] })[] {
-    const seen = new Set<number>();
-    const colleagues: (Caregiver & { schedules?: Schedule[] })[] = [];
+    weeks: number,
+): ShiftOccurrence[] {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const end = new Date(today);
+    end.setDate(end.getDate() + weeks * 7);
+
+    const occurrences: ShiftOccurrence[] = [];
+
     for (const client of clients) {
-        for (const cg of client.caregivers ?? []) {
-            if (myIds.includes(cg.id)) continue;
-            if (seen.has(cg.id)) continue;
-            seen.add(cg.id);
-            const cgSchedules = (client.schedules ?? []).filter((s) => s.caregiver_id === cg.id);
-            colleagues.push({ ...cg, schedules: cgSchedules });
+        // Cancelled/modified date+schedule_id pairs — skip those occurrences of the base schedule
+        const skip = new Set<string>();
+        for (const ex of client.schedule_exceptions ?? []) {
+            if ((ex.type === 'cancelled' || ex.type === 'modified') && ex.schedule_id) {
+                skip.add(`${ex.schedule_id}:${ex.date}`);
+            }
+        }
+
+        // Expand recurring schedules into upcoming dates
+        const mySchedules = (client.schedules ?? []).filter((s) =>
+            myIds.includes(s.caregiver_id),
+        );
+        for (const s of mySchedules) {
+            const cursor = new Date(today);
+            while (cursor <= end) {
+                if (ownDayOfWeek(cursor) === s.day_of_week) {
+                    const dateStr = toDateStr(cursor);
+                    if (!skip.has(`${s.id}:${dateStr}`)) {
+                        occurrences.push({
+                            kind: 'schedule',
+                            id: s.id,
+                            date: dateStr,
+                            startTime: s.start_time,
+                            endTime: s.end_time,
+                            clientName: client.name,
+                            dayLabel: DAY_LABELS[s.day_of_week] ?? '?',
+                        });
+                    }
+                }
+                cursor.setDate(cursor.getDate() + 1);
+            }
+        }
+
+        // One-off added exceptions for me (e.g., from availability claims)
+        for (const ex of client.schedule_exceptions ?? []) {
+            if (!myIds.includes(ex.caregiver_id)) continue;
+            if (ex.type !== 'added' && ex.type !== 'modified') continue;
+            const d = new Date(ex.date);
+            d.setHours(0, 0, 0, 0);
+            if (d < today || d > end) continue;
+            occurrences.push({
+                kind: 'exception',
+                id: ex.id,
+                date: ex.date,
+                startTime: ex.start_time,
+                endTime: ex.end_time,
+                clientName: client.name,
+                dayLabel: DAY_LABELS[ownDayOfWeek(d)] ?? '?',
+            });
         }
     }
-    return colleagues;
+
+    return occurrences.sort((a, b) =>
+        a.date === b.date ? a.startTime.localeCompare(b.startTime) : a.date.localeCompare(b.date),
+    );
 }
 
 function getMonday(date: Date): Date {
@@ -165,7 +238,6 @@ export default function CaregiverScheduleIndex({
         allAvailabilitySlots = slots;
     }
 
-    const colleagues = collectColleagues(clients, myCaregiverIds);
 
     function handleShiftClick(kind: 'schedule' | 'exception', id: number, date: string, isMine: boolean) {
         if (isMine) {
@@ -202,15 +274,10 @@ export default function CaregiverScheduleIndex({
         }
     }
 
-    // All my own recurring schedules across clients — used as options when proposing a swap
-    const myOwnSchedules: Schedule[] = clients.flatMap((c) =>
-        (c.schedules ?? [])
-            .filter((s) => myCaregiverIds.includes(s.caregiver_id))
-            .map((s) => ({
-                ...s,
-                caregiver: { ...(s.caregiver as Caregiver), name: c.name },
-            })),
-    );
+    // All upcoming occurrences of my own shifts across clients (next 8 weeks).
+    // Used as picker options when proposing a swap — combines recurring schedules
+    // expanded to dates with one-time added exceptions, minus cancelled/modified dates.
+    const myOwnOccurrences = collectMyOccurrences(clients, myCaregiverIds, 8);
 
     return (
         <>
@@ -367,7 +434,8 @@ export default function CaregiverScheduleIndex({
                     kind={dialog.kind}
                     id={dialog.id}
                     date={dialog.date}
-                    colleagues={colleagues}
+                    clients={clients}
+                    myCaregiverIds={myCaregiverIds}
                 />
             )}
 
@@ -420,7 +488,7 @@ export default function CaregiverScheduleIndex({
                     targetCaregiverName={requestSwap.caregiverName}
                     targetStartTime={requestSwap.startTime}
                     targetEndTime={requestSwap.endTime}
-                    mySchedules={myOwnSchedules}
+                    myOccurrences={myOwnOccurrences}
                 />
             )}
 

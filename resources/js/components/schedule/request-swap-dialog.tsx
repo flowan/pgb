@@ -3,18 +3,7 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import type { Schedule } from '@/types';
-
-interface MyShift {
-    kind: 'schedule' | 'exception';
-    id: number;
-    day_of_week: number | null;
-    date: string | null;
-    start_time: string;
-    end_time: string;
-    client_name?: string;
-}
+import type { ShiftOccurrence } from '@/pages/caregiver-schedule/index';
 
 interface Props {
     open: boolean;
@@ -27,7 +16,13 @@ interface Props {
     targetCaregiverName: string;
     targetStartTime: string;
     targetEndTime: string;
-    mySchedules: Schedule[];
+    myOccurrences: ShiftOccurrence[];
+}
+
+function formatOccurrence(o: ShiftOccurrence): string {
+    const d = new Date(o.date);
+    const dateLabel = d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+    return `${o.dayLabel} ${dateLabel} · ${o.startTime.slice(0, 5)}–${o.endTime.slice(0, 5)} · ${o.clientName}`;
 }
 
 export function RequestSwapDialog({
@@ -40,24 +35,28 @@ export function RequestSwapDialog({
     targetCaregiverName,
     targetStartTime,
     targetEndTime,
-    mySchedules,
+    myOccurrences,
 }: Props) {
-    const [myScheduleId, setMyScheduleId] = useState<number | null>(null);
-    const [myDate, setMyDate] = useState<string>('');
+    // Encode selection as "kind:id:date" so each occurrence is a unique value
+    const [selection, setSelection] = useState<string>('');
     const [submitting, setSubmitting] = useState(false);
 
     function submit() {
-        if (!myScheduleId || !myDate) return;
-        setSubmitting(true);
+        if (!selection) return;
+        const [kind, idStr, date] = selection.split('|');
+        const id = Number(idStr);
+
         const body: Record<string, unknown> = {
-            requester_schedule_id: myScheduleId,
-            requester_date: myDate,
+            requester_date: date,
             target_caregiver_id: targetCaregiverId,
             target_date: targetDate,
         };
+        if (kind === 'schedule') body.requester_schedule_id = id;
+        else body.requester_schedule_exception_id = id;
         if (targetKind === 'schedule') body.target_schedule_id = targetId;
         else body.target_schedule_exception_id = targetId;
 
+        setSubmitting(true);
         router.post('/shift-swap-requests', body, {
             preserveScroll: true,
             onFinish: () => setSubmitting(false),
@@ -82,44 +81,35 @@ export function RequestSwapDialog({
 
                     <div className="space-y-1.5">
                         <Label>Bied één van jouw shifts aan</Label>
-                        <select
-                            value={myScheduleId ?? ''}
-                            onChange={(e) => setMyScheduleId(e.target.value ? Number(e.target.value) : null)}
-                            className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
-                        >
-                            <option value="">— Kies een eigen shift —</option>
-                            {mySchedules.map((s) => (
-                                <option key={s.id} value={s.id}>
-                                    {dayLabel(s.day_of_week)} {s.start_time.slice(0, 5)}–{s.end_time.slice(0, 5)}
-                                    {s.caregiver?.name ? ` · ${s.caregiver.name}` : ''}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <Label htmlFor="my_date">Datum van jouw shift</Label>
-                        <Input
-                            id="my_date"
-                            type="date"
-                            value={myDate}
-                            onChange={(e) => setMyDate(e.target.value)}
-                        />
+                        {myOccurrences.length === 0 ? (
+                            <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+                                Je hebt geen aankomende eigen shifts om aan te bieden.
+                            </div>
+                        ) : (
+                            <select
+                                value={selection}
+                                onChange={(e) => setSelection(e.target.value)}
+                                className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                            >
+                                <option value="">— Kies een eigen shift —</option>
+                                {myOccurrences.map((o) => (
+                                    <option key={`${o.kind}|${o.id}|${o.date}`} value={`${o.kind}|${o.id}|${o.date}`}>
+                                        {formatOccurrence(o)}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
                     </div>
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
                         Annuleren
                     </Button>
-                    <Button onClick={submit} disabled={submitting || !myScheduleId || !myDate}>
+                    <Button onClick={submit} disabled={submitting || !selection}>
                         Verzoek versturen
                     </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     );
-}
-
-function dayLabel(d: number): string {
-    return ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'][d] ?? '?';
 }
