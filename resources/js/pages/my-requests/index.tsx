@@ -168,16 +168,30 @@ export default function MyRequestsIndex({
                                         <Card key={o.id} className="p-3">
                                             <div className="flex items-center justify-between gap-3">
                                                 <div className="text-sm">
-                                                    <div className="font-medium">
+                                                    <div className="flex items-center gap-2 font-medium">
                                                         <ClientLabel schedule={o.schedule} exception={o.schedule_exception} />
                                                         {' • '}
                                                         {String(o.date)}
+                                                        {o.from_sickness ? (
+                                                            <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-red-700">
+                                                                Ziekmelding
+                                                            </span>
+                                                        ) : (
+                                                            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-700">
+                                                                Vrijwillig
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <div className="text-xs text-muted-foreground">
                                                         <TimeLabel schedule={o.schedule} exception={o.schedule_exception} />
                                                         {' • Status: '}
                                                         {String(o.status)}
                                                     </div>
+                                                    {o.notes && !o.from_sickness && (
+                                                        <div className="mt-1 text-xs text-muted-foreground italic">
+                                                            “{o.notes}”
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 {o.status === 'open' && (
                                                     <Button variant="outline" size="sm" onClick={() => withdrawTakeover(o.id)}>

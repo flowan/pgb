@@ -23,6 +23,7 @@ class ShiftTakeoverOffer extends Model
         'claimed_at',
         'resulting_exception_id',
         'notes',
+        'from_sickness',
     ];
 
     protected function casts(): array
@@ -31,6 +32,7 @@ class ShiftTakeoverOffer extends Model
             'date' => 'date:Y-m-d',
             'claimed_at' => 'datetime',
             'status' => ShiftTakeoverOfferStatus::class,
+            'from_sickness' => 'boolean',
         ];
     }
 

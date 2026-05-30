@@ -88,6 +88,7 @@ export interface ShiftTakeoverOffer {
     claimed_by_caregiver_id: number | null;
     claimed_at: string | null;
     notes: string | null;
+    from_sickness: boolean;
     offered_by?: Caregiver;
     claimed_by?: Caregiver;
 }

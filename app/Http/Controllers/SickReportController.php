@@ -210,6 +210,7 @@ class SickReportController extends Controller
             'offered_by_caregiver_id' => $caregiverId,
             'status' => ShiftTakeoverOfferStatus::Open,
             'notes' => 'Automatisch aangemaakt na ziekmelding',
+            'from_sickness' => true,
         ]);
 
         $client = Client::find($schedule->client_id);
@@ -236,6 +237,7 @@ class SickReportController extends Controller
             'offered_by_caregiver_id' => $exception->caregiver_id,
             'status' => ShiftTakeoverOfferStatus::Open,
             'notes' => 'Automatisch aangemaakt na ziekmelding',
+            'from_sickness' => true,
         ]);
 
         $client = Client::find($exception->client_id);

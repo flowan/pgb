@@ -260,10 +260,11 @@ export function WeekView({
                 const offer = dayOffers.find((o) => o.schedule_id === s.id);
                 if (offer) {
                     const offerByMe = myCaregiverIds.includes(offer.offered_by_caregiver_id);
+                    const reason = offer.from_sickness ? ' (ziek)' : '';
                     events.push({
                         id: `s-${s.id}`,
                         label: s.caregiver?.name ?? 'Onbekend',
-                        sublabel: offerByMe ? 'Aangeboden voor overname' : 'Wordt aangeboden',
+                        sublabel: (offerByMe ? 'Aangeboden voor overname' : 'Wordt aangeboden') + reason,
                         startTime: s.start_time,
                         endTime: s.end_time,
                         variant: 'offered',
