@@ -1,5 +1,4 @@
 import { Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import type { AvailabilitySlot, Schedule, ScheduleException, ShiftTakeoverOffer } from '@/types';
 
 const dayNamesShort = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
@@ -140,6 +139,8 @@ function EventCard({ event }: { event: PositionedEvent }) {
         offered: 'text-orange-600 dark:text-orange-400',
     };
 
+    const hasButtons = !!event.onDelete || !!event.onAction;
+
     return (
         <div
             className={`group absolute overflow-hidden rounded-md border px-2 py-1 text-xs ${styles[event.variant]}`}
@@ -150,45 +151,47 @@ function EventCard({ event }: { event: PositionedEvent }) {
                 width: `calc(${widthPercent}% - 4px)`,
             }}
         >
-            <div className="flex items-start justify-between">
-                <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium">{event.label}</div>
-                    <div className={`text-[11px] ${timeStyles[event.variant]}`}>
-                        {formatTime(event.startTime)} – {formatTime(event.endTime)}
-                    </div>
-                    {event.sublabel && height > 50 && (
-                        <div className="mt-0.5 truncate text-[11px] opacity-70">
-                            {event.sublabel}
-                        </div>
-                    )}
+            <div className="min-w-0">
+                <div className="font-medium leading-tight" style={{ overflowWrap: 'anywhere' }}>
+                    {event.label}
                 </div>
-                {event.onDelete && (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 shrink-0 p-0 opacity-0 group-hover:opacity-100"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            event.onDelete!();
-                        }}
-                    >
-                        <Trash2 className="h-3 w-3" />
-                    </Button>
-                )}
-                {event.onAction && (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 shrink-0 px-1.5 text-[10px] font-medium text-purple-700 opacity-0 group-hover:opacity-100"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            event.onAction!();
-                        }}
-                    >
-                        {event.actionLabel ?? 'Claimen'}
-                    </Button>
+                <div className={`text-[11px] leading-tight ${timeStyles[event.variant]}`}>
+                    {formatTime(event.startTime)} – {formatTime(event.endTime)}
+                </div>
+                {event.sublabel && height > 50 && (
+                    <div className="mt-0.5 text-[11px] leading-tight opacity-70" style={{ overflowWrap: 'anywhere' }}>
+                        {event.sublabel}
+                    </div>
                 )}
             </div>
+            {hasButtons && (
+                <div className="pointer-events-none absolute right-1 top-1 flex items-start gap-0.5 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+                    {event.onAction && (
+                        <button
+                            type="button"
+                            className={`rounded-sm bg-white/90 px-1.5 py-0.5 text-[10px] font-medium shadow-sm hover:bg-white dark:bg-gray-900/90 dark:hover:bg-gray-900 ${timeStyles[event.variant]}`}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                event.onAction!();
+                            }}
+                        >
+                            {event.actionLabel ?? 'Claimen'}
+                        </button>
+                    )}
+                    {event.onDelete && (
+                        <button
+                            type="button"
+                            className="rounded-sm bg-white/90 p-0.5 shadow-sm hover:bg-white dark:bg-gray-900/90 dark:hover:bg-gray-900"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                event.onDelete!();
+                            }}
+                        >
+                            <Trash2 className="h-3 w-3" />
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
